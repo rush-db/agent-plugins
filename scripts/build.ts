@@ -6,6 +6,7 @@ import { loadShared, type Shared } from './lib/shared.ts'
 import { checkSkills } from './lib/skills.ts'
 import { antigravityPlugin } from './targets/antigravity.ts'
 import { claudePlugin } from './targets/claude.ts'
+import { codexPlugin } from './targets/codex.ts'
 import { geminiExtension } from './targets/gemini.ts'
 
 /** Turns the shared sources into files. Each platform step adds its generator here. */
@@ -15,7 +16,8 @@ export const generators: Generator[] = [
   (_shared, root) => hookBundles(root),
   claudePlugin,
   geminiExtension,
-  antigravityPlugin
+  antigravityPlugin,
+  codexPlugin
 ]
 
 /** Top-level paths that hold generated output and must never contain symlinks. */

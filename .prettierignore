@@ -20,3 +20,9 @@ commands/
 mcp_config.json
 /hooks.json
 rules/
+
+# Codex marketplace at the root, written by scripts/build.ts.
+.agents/
+
+# Agent Plugins schemas, copied unchanged from agent-plugins.org.
+scripts/schemas/

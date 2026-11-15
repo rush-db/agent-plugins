@@ -21,8 +21,8 @@ your RushDB project. It is **off by default**; you turn it on yourself.
 | Qwen Code               | `qwen extensions install rush-db/agent-plugins:rushdb`               | yes, off by default         | hosted, OAuth (not yet verified in Qwen)                 |
 | Gemini CLI              | `gemini extensions install https://github.com/rush-db/agent-plugins` | yes, off by default         | local `@rushdb/mcp-server`, API key                      |
 | Antigravity (`agy`)     | `agy plugin install https://github.com/rush-db/agent-plugins`        | recall only, off by default | local `@rushdb/mcp-server`, API key                      |
-| Codex (marketplace)     | `codex plugin marketplace add rush-db/agent-plugins`, then `codex plugin add rushdb@rushdb` | yes, off by default         | hosted, OAuth                                            |
-| ChatGPT and Codex (app) | the OpenAI app directory, once listed                                | no                          | hosted, OAuth                                            |
+| Codex (marketplace)     | `codex plugin marketplace add rush-db/agent-plugins`, then `codex plugin add rushdb@rushdb` | yes, off by default         | hosted, OAuth (`codex mcp login rushdb`)                 |
+| ChatGPT and Codex (app) | the OpenAI plugin directory, once listed                             | no                          | hosted, OAuth                                            |
 | Pi                      | `pi install npm:@rushdb/pi`                                          | yes, off by default         | local `@rushdb/mcp-server` with an API key, or hosted    |
 | DeepSeek Harness        | `dsh plugin --profile <p> add @rushdb/dsh`                           | yes, off by default         | built-in RushDB tools, API key                           |
 
@@ -36,10 +36,25 @@ your RushDB project. It is **off by default**; you turn it on yourself.
   `RUSHDB_AUTO_CONTEXT` to turn context on) in your shell, or use the config file
   below.
 - **Codex**: the first command adds the marketplace and the second installs the
-  plugin (or pick it in `/plugins`). Codex asks you to trust plugin hooks: trust
-  them in `/hooks` if you want automatic context.
+  plugin (or pick it in `/plugins`). Sign the MCP tools in with
+  `codex mcp login rushdb`, then run the `rushdb-setup` skill, or ask Codex to
+  set up RushDB. Codex skips plugin hooks until you trust them: trust them in
+  `/hooks` if you want automatic context. Codex has no plugin settings form, so
+  the hooks read `RUSHDB_*` from the environment Codex was started in, or the
+  config file below.
+  - Codex reads this repository's `.agents/plugins/marketplace.json` ahead of
+    `.claude-plugin/marketplace.json`. Without the first, it would install the
+    Claude Code folder instead.
+  - The Codex folder (`plugins/codex/rushdb`) uses the Codex compatibility
+    layout (`.codex-plugin/plugin.json`, `.mcp.json`), not the portable
+    `plugin.json`: Codex 0.169.0 and 0.171.0-alpha.5 skip every plugin hook when
+    a portable root `plugin.json` is present. `scripts/smoke/codex.sh` (run in CI
+    on a pinned and on the latest Codex) shows when that changes, and the folder
+    can then move to the portable layout.
 - **ChatGPT and Codex app**: the directory build has no hooks, so no automatic
   context. Install either the app or the Codex marketplace plugin, not both.
+  `pnpm build:openai-zip` writes it to `dist/openai/rushdb.zip` in the portable
+  format, and `pnpm check:openai` checks it against the directory rules.
 
 Get an API key at [app.rushdb.com](https://app.rushdb.com). Automatic context
 always needs one (or a [self-hosted engine](#self-hosted-rushdb)), even where the
@@ -171,7 +186,9 @@ claude mcp add rushdb-local --env RUSHDB_API_KEY=<key> --env RUSHDB_API_URL=<url
   every manifest. See [shared/README.md](shared/README.md).
 - `skills/`: the synced skills, written by `pnpm sync:skills`.
 - `scripts/`: `build.ts` writes every generated file (`--check` fails on
-  drift); `sync-skills.ts` copies the pinned RushDB skills.
+  drift); `sync-skills.ts` copies the pinned RushDB skills; `check-*.ts`
+  validate each platform; `build-openai-zip.ts` writes the OpenAI directory
+  ZIP; `smoke/` installs each platform in a throwaway home.
 - `packages/`: the host-neutral runtime and the npm packages.
 - `submissions/`: drafts of the listing submissions. See
   [submissions/README.md](submissions/README.md).

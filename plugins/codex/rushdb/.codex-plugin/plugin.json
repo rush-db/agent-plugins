@@ -1,0 +1,52 @@
+{
+  "name": "rushdb",
+  "version": "0.1.0",
+  "description": "RushDB for agents: search, query and analyze your data with RushDB MCP tools and skills, with optional automatic context across sessions.",
+  "author": {
+    "name": "RushDB",
+    "url": "https://rushdb.com"
+  },
+  "homepage": "https://rushdb.com",
+  "repository": "https://github.com/rush-db/agent-plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "rushdb",
+    "mcp",
+    "database",
+    "rag",
+    "semantic-search",
+    "vector-search",
+    "knowledge-graph",
+    "graph-database",
+    "analytics",
+    "agent-context"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "RushDB",
+    "shortDescription": "Query and search your data",
+    "longDescription": "RushDB gives your agent a database it can search, query and analyze. The plugin connects the RushDB MCP tools and ships skills for building queries, faceted search, data modeling and agent context. Use it for RAG over your records, structured and semantic search, relationship traversal and agentic analytics such as counts, groupings and time series. Optional automatic context, off by default, recalls relevant earlier work at session start and stores finished turns in your RushDB project.",
+    "developerName": "RushDB",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://rushdb.com",
+    "supportURL": "https://github.com/rush-db/agent-plugins/issues",
+    "defaultPrompt": [
+      "Search my RushDB records for anything about onboarding",
+      "Count my RushDB records by label and show the top five",
+      "Describe the data model of my RushDB project"
+    ],
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/logo.png"
+  },
+  "extensions": {
+    "com.openai": {
+      "onboardingSkill": "./skills/rushdb-setup/SKILL.md"
+    }
+  }
+}

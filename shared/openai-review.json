@@ -1,0 +1,61 @@
+{
+  "category": "Developer Tools",
+  "capabilities": ["Read", "Write"],
+  "directoryLongDescription": "RushDB gives ChatGPT and Codex a database they can search, query and analyze. Connect your RushDB project and ask questions about your own records: RAG over documents and notes with semantic and text search, structured queries with filters and relationship traversal, and agentic analytics such as counts, groupings, averages and time series. The plugin also ships skills for building RushDB queries, faceted search, data modeling and keeping agent context in RushDB, and it can create and update records when you ask.\n\nFor developers and data teams who keep application data, documents or agent context in RushDB (RushDB Cloud or a self-hosted RushDB). You sign in with your RushDB account; the plugin only reaches the projects you authorize.\n\nLimitations: it works only on data already in your RushDB project, semantic search needs an embedding index on the property you search, and deleting records always asks you first. Automatic recall and capture of sessions are not part of this plugin; the Codex marketplace build offers them as an option.",
+  "review": {
+    "test_cases": {
+      "positive": [
+        {
+          "description": "RAG: answer from the demo project's support articles and name the sources",
+          "prompt": "Using my RushDB data, what do our support articles say about resetting a password? Name the articles you used.",
+          "tools_triggered": "getSchemaMarkdown, semanticSearch",
+          "expected_behavior": "Finds the ARTICLE records about password resets with semantic search, answers only from their text, and lists the titles of the articles it used. It does not invent steps that are not in the articles."
+        },
+        {
+          "description": "Query: filter records and follow a relationship",
+          "prompt": "In RushDB, find the orders over 500 placed in the last 30 days and show each order's customer name.",
+          "tools_triggered": "getSchemaMarkdown, getSearchQuerySpec, findRecords",
+          "expected_behavior": "Reads the schema, then runs one findRecords query on ORDER with an amount filter, a date filter and a traversal to CUSTOMER, and shows the matching orders with customer names in a table."
+        },
+        {
+          "description": "Analytics: count records per group",
+          "prompt": "How many orders do I have in RushDB for each status? Show the result as a table.",
+          "tools_triggered": "getSchemaMarkdown, getSearchQuerySpec, findRecords",
+          "expected_behavior": "Runs findRecords on ORDER with a count grouped by status and shows one row per status with its count. The counts add up to the total number of orders."
+        },
+        {
+          "description": "Analytics: time series",
+          "prompt": "Show the total order amount per month for the last six months from my RushDB project.",
+          "tools_triggered": "getSchemaMarkdown, getSearchQuerySpec, findRecords",
+          "expected_behavior": "Runs findRecords on ORDER with a sum of amount bucketed by month over the last six months and shows one row per month, including months with no orders as zero or noting they are missing."
+        },
+        {
+          "description": "Write: store a note and link it to an existing record",
+          "prompt": "Save a note in RushDB that the customer Northwind asked for copies of last quarter's invoices, and link it to that customer.",
+          "tools_triggered": "searchValues, findRecords, createRecord, attachRelation",
+          "expected_behavior": "Finds the CUSTOMER record named Northwind, creates one NOTE record with the request text, links it to that customer, and confirms what it stored and where."
+        }
+      ],
+      "negative": [
+        {
+          "description": "Unrelated general question: RushDB tools should not be called",
+          "prompt": "What is a good name for a golden retriever puppy?"
+        },
+        {
+          "description": "Unsupported action: RushDB does not send email",
+          "prompt": "Email every customer in my CRM a reminder about their unpaid invoices."
+        },
+        {
+          "description": "Unsupported action: RushDB does not process payments",
+          "prompt": "Charge the card on file for Northwind's overdue invoice."
+        }
+      ]
+    },
+    "demo_recording_url": null,
+    "commerce": false,
+    "commerce_description": "RushDB does not sell products or process payments in ChatGPT or Codex."
+  },
+  "publication": {
+    "release_notes": "First release in the plugin directory: RushDB MCP tools for semantic and text search, structured queries and analytics over your RushDB project, with skills for query building, faceted search, data modeling and agent context."
+  }
+}
