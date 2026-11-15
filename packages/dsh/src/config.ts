@@ -45,7 +45,10 @@ export interface Config {
   includeSubagents?: boolean
   /** Outbox directory for captured turns; relative paths resolve against `$DSH_HOME`. */
   outboxPath?: string
-  /** Keep sessions that received recalled RushDB context out of the session-log upload to DeepSeek. */
+  /**
+   * Skip every session-log upload to DeepSeek that would carry RushDB context: from a session's first recalled
+   * context on, also after a resume. Earlier uploads have gone out; sessions without RushDB context upload as usual.
+   */
   excludeFromLogUpload?: boolean
 }
 
@@ -102,7 +105,9 @@ export const Config: z<Config> = z.object({
   excludeFromLogUpload: z
     .boolean()
     .default(false)
-    .description('Keep sessions that received RushDB context out of the session-log upload to DeepSeek.')
+    .description(
+      'From a session’s first RushDB context on, skip its session-log uploads to DeepSeek (also after a resume). Earlier uploads and sessions without RushDB context are unaffected.'
+    )
 })
 
 export interface Settings {

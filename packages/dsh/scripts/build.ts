@@ -1,5 +1,5 @@
-// Builds what the npm package ships: lib/index.js (src/ with packages/core bundled in; dsh and the RushDB libraries
-// stay external, resolved from the dsh profile) and icon.png (a copy of shared/assets/icon.png).
+// Builds what the npm package ships: lib/index.js (src/ with packages/core bundled in; dsh, the RushDB libraries
+// and undici stay external, resolved from the dsh profile) and icon.png (a copy of shared/assets/icon.png).
 import { copyFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -29,7 +29,7 @@ export async function buildPackage(root = packageRoot): Promise<string> {
     legalComments: 'inline',
     charset: 'utf8',
     banner: { js: BANNER },
-    external: ['@deepseek-ai/*', '@rushdb/agent-memory-contract', '@rushdb/javascript-sdk'],
+    external: ['@deepseek-ai/*', '@rushdb/agent-memory-contract', '@rushdb/javascript-sdk', 'undici'],
     logLevel: 'warning'
   })
   await copyFile(join(root, '..', '..', 'shared', 'assets', 'icon.png'), join(root, 'icon.png'))

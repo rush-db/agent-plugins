@@ -1,11 +1,13 @@
 /**
- * `excludeFromLogUpload`: keeps every session that ever received RushDB context out of DeepSeek's session-log upload.
+ * `excludeFromLogUpload`: no session-log upload to DeepSeek carries RushDB context.
  *
- * dsh uploads a session's log incrementally and lets a plugin skip a whole request, not single messages, so a request
- * that isn't skipped carries every event since the last accepted upload. The decision therefore comes from the
+ * dsh uploads a session's log incrementally and lets a plugin skip a whole upload request, not single messages, so a
+ * request that isn't skipped carries every event since the last accepted upload. From a session's first RushDB context
+ * on, every upload request of that session is skipped; uploads accepted before it have already gone out, and sessions
+ * without RushDB context are unaffected. The decision therefore comes from the
  * session's own log, not from this process's memory: a session projection folds the log, its fork-inherited prefix
  * included, and dsh rebuilds it on resume. A resumed session, one that continues under a new agent, and a subagent
- * seeded from a session with RushDB context all stay excluded.
+ * seeded from a session with RushDB context are all skipped.
  */
 import { CONTEXT_SOURCE_KIND, type Context, type ProjectionDefinition, type Session } from './host.ts'
 

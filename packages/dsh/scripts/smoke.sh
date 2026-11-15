@@ -6,13 +6,15 @@
 #   4. a headless turn with recall on sends recall searches before the model call;
 #   5. excludeFromLogUpload: a resumed session that received RushDB context in an earlier run uploads none of it
 #      (and, as a control, does upload it with the option off);
-#   6. a RushDB that accepts the connection and never answers: dsh exits within ANSWER_EXIT_BOUND_S of the answer,
-#      a tool call ends with an error result, and the captured turns wait in the outbox until the next run sends them.
+#   6. a RushDB that accepts the connection and never answers, and one at an address that drops packets: dsh exits
+#      within ANSWER_EXIT_BOUND_S of the answer, a tool call ends with an error result, and the captured turns wait in
+#      the outbox until the next run sends them.
 # Real `dsh headless` turns run to the end against local stand-ins for RushDB and the DeepSeek API
 # (scripts/stand-ins.mjs) on 127.0.0.1; no RushDB service and no DeepSeek key are used.
 #   DSH_VERSION  dsh to install (default 0.2.2-rc.3)
 #   DSH_BIN      use this dsh binary instead of installing one
 #   SMOKE_PNPM_VERSION  pnpm that dsh installs plugins with (default 10.28.1)
+#   SMOKE_BLACKHOLE_URL  a RushDB URL whose address drops packets (default http://10.255.255.1/api/v1)
 #   SMOKE_KEEP=1 keep the scratch directory (dsh's logs are under home/profiles/*/.plugin-manager/logs)
 set -euo pipefail
 
@@ -82,7 +84,8 @@ boot() {
   local mode="$1" config="$2" prompt="$3"
   shift 3
   echo "$mode" >"$scratch/rushdb.mode"
-  printf -- '- id: rushdb\n  config:\n    url: %s\n    contextScope: smoke\n%s\n' "$rushdb_url" "$config" >"$scratch/patch.yml"
+  printf -- '- id: rushdb\n  config:\n    url: %s\n    contextScope: smoke\n%s\n' "${url:-$rushdb_url}" "$config" \
+    >"$scratch/patch.yml"
   : >"$scratch/rushdb.log"
   : >"$scratch/model.log"
   (cd "$scratch/work" && RUSHDB_API_KEY=smoke-key-not-real DEEPSEEK_API_KEY=smoke-model-key \
@@ -146,11 +149,20 @@ grep -q '"toolError":true' "$scratch/model.log" || fail "the rushdb_query call d
 ((after <= ANSWER_EXIT_BOUND_S * 1000)) || fail "dsh exited ${after} ms after the answer, over ${ANSWER_EXIT_BOUND_S} s"
 echo "smoke: RushDB never answers, tool call: an error result at its deadline, exit ${after} ms after the answer"
 
-# The next run, with RushDB answering, sends the waiting turn along with its own.
+# 7. An address that drops packets: every connect hangs, not just the answer.
+url="${SMOKE_BLACKHOLE_URL:-http://10.255.255.1/api/v1}" \
+  boot ok '    autoContext: { recall: true, capture: true }' "Which package manager does this project use?"
+after="$(timing afterAnswerMs)"
+[[ "$(timing code)" == 0 ]] || fail "dsh exited with $(cat "$scratch/timing.json")"
+((after <= ANSWER_EXIT_BOUND_S * 1000)) || fail "dsh exited ${after} ms after the answer, over ${ANSWER_EXIT_BOUND_S} s"
+[[ "$(outbox_count)" == 2 ]] || fail "the captured turns are not in the outbox ($(outbox_count) files)"
+echo "smoke: RushDB address drops packets, recall and capture: exit ${after} ms after the answer, the turn waits in the outbox"
+
+# The next run, with RushDB answering, sends the waiting turns along with its own.
 boot ok '    autoContext: { capture: true }' "And which test runner does it use?"
 [[ "$(outbox_count)" == 0 ]] || fail "the outbox still holds $(outbox_count) turns"
-(($(grep -c "POST /api/v1/records$" "$scratch/rushdb.log") >= 2)) ||
-  fail "the waiting turn was not sent: $(cat "$scratch/rushdb.log")"
-echo "smoke: the next run sent the waiting turn; the outbox is empty"
+(($(grep -c "POST /api/v1/records$" "$scratch/rushdb.log") >= 3)) ||
+  fail "the waiting turns were not sent: $(cat "$scratch/rushdb.log")"
+echo "smoke: the next run sent the waiting turns; the outbox is empty"
 
 echo "smoke: OK"

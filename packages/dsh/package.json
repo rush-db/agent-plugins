@@ -65,7 +65,8 @@
   },
   "dependencies": {
     "@rushdb/agent-memory-contract": "^0.3.1",
-    "@rushdb/javascript-sdk": "^3.4.0"
+    "@rushdb/javascript-sdk": "^3.4.0",
+    "undici": "^7.16.0"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "~4.1.0",

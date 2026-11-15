@@ -1,3 +1,5 @@
+import { spawn } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import { resolveConnection } from '../src/config.ts'
 import { RequestTimeoutError, Transport } from '../src/transport.ts'
@@ -89,5 +91,38 @@ describe('Transport', () => {
     )
     await expect(connection.options.embedder!.embed(['text'])).rejects.toBeInstanceOf(RequestTimeoutError)
     expect(api.requests[0]!.path).toBe('/api/v1/embeddings')
+  })
+})
+
+/** An address that drops packets: a TCP connect to it neither succeeds nor fails. */
+const BLACKHOLE_URL = process.env.RUSHDB_TEST_BLACKHOLE_URL ?? 'http://10.255.255.1/api/v1'
+const transportModule = fileURLToPath(new URL('../src/transport.ts', import.meta.url))
+
+/**
+ * Runs one request to the blackhole in a child process and returns how long the process lived. Only a separate
+ * process shows whether a connect still in progress keeps the event loop, and so dsh, alive.
+ */
+function childLifetime(timeoutMs: number, closeAfterMs?: number): Promise<number> {
+  const script = `
+    const { Transport } = await import(${JSON.stringify(transportModule)})
+    const transport = new Transport({ timeoutMs: ${timeoutMs} })
+    transport.fetch(${JSON.stringify(BLACKHOLE_URL)}).catch(() => {})
+    ${closeAfterMs === undefined ? '' : `setTimeout(() => transport.close(), ${closeAfterMs})`}
+  `
+  const started = Date.now()
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ['--input-type=module', '-e', script], { stdio: 'inherit' })
+    child.on('error', reject)
+    child.on('exit', () => resolve(Date.now() - started))
+  })
+}
+
+describe('a RushDB address that drops packets', () => {
+  it('lets the process exit at the request deadline, not at Node’s 10 s connect timeout', async () => {
+    expect(await childLifetime(1500)).toBeLessThan(4000)
+  })
+
+  it('lets the process exit at once when the transport closes, whatever the deadline', async () => {
+    expect(await childLifetime(60_000, 300)).toBeLessThan(2500)
   })
 })

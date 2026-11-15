@@ -68,8 +68,10 @@ when it unloads, so RushDB never holds dsh up:
 | A tool call                          | 30 s, then the call ends with an error result the model sees |
 | Sending a captured turn, index setup | 10 s per request, retried later                              |
 
-A one-shot `dsh headless` run exits within about 5 s of printing its answer
-even when RushDB accepts the connection and never answers: up to 2 s to send
+A one-shot `dsh headless` run exits within about 5 s of printing its answer,
+also when RushDB accepts the connection and never answers and when the network
+drops packets on the way to it (a connect gives up at the request's deadline,
+and unloading drops any still in progress): up to 2 s to send
 captured turns, then the outbox's retry back-off and teardown. Turns not sent
 by then stay in the outbox (`$DSH_HOME/rushdb/outbox`) and go out on the next
 run; nothing is lost.
@@ -97,7 +99,7 @@ same RushDB project.
 | `profileId`            | `default`             | Profile id stored with the context.                                                                                                                                            |
 | `contextScope`         |                       | Replaces the project key.                                                                                                                                                      |
 | `outboxPath`           | `rushdb/outbox`       | Outbox for captured turns; relative to `$DSH_HOME`.                                                                                                                            |
-| `excludeFromLogUpload` | `false`               | Keep sessions that received RushDB context out of the session-log upload to DeepSeek.                                                                                          |
+| `excludeFromLogUpload` | `false`               | From a session's first RushDB context on, skip its session-log uploads to DeepSeek.                                                                                            |
 
 ## What leaves your machine
 
@@ -115,13 +117,15 @@ same RushDB project.
 - With an engine and an embedding provider, the same text also goes to that
   provider to be embedded.
 - **DeepSeek session logs**: DeepSeek Harness uploads session logs to DeepSeek
-  by default, and recalled context becomes part of the session. Set
-  `excludeFromLogUpload: true` to keep every session that received RushDB
-  context out of that upload (dsh can only skip a whole session), or turn the
-  upload off in dsh's settings. The plugin reads this from the session's own
-  log, so a session stays out after a resume (also with automatic context
-  turned off since), when it continues under a new agent, and for subagents
-  started from it.
+  by default, and recalled context becomes part of the session. With
+  `excludeFromLogUpload: true` (off by default), no upload request that would
+  carry RushDB context is sent. dsh can skip only whole upload requests, so
+  from a session's first recalled context on, nothing more of that session's
+  log is uploaded: not after a resume (also with automatic context turned off
+  since), not under a new agent, and not from subagents forked from it.
+  Uploads made before the first recalled context have already gone out, and
+  sessions that never received RushDB context upload as usual. To upload
+  nothing at all, turn the upload off in dsh's settings.
 - **Deleting it**: stored turns and facts are ordinary `EPISODE` and
   `MEMORY_FACT` records in your project; delete them in the RushDB dashboard.
   Turn automatic context off to stop sending.

@@ -51,7 +51,7 @@ export function apply(ctx: Context, config: Config): void {
 
   for (const tool of createTools({ settings, clients })) ctx.tools.register(tool)
 
-  // Also with automatic context off: a session that got RushDB context earlier stays out of the upload on resume.
+  // Also with automatic context off: a session that got RushDB context in an earlier run is still skipped on resume.
   if (settings.excludeFromLogUpload) excludeContextSessions(ctx, auto.injectedSessions)
 
   // On unload: a flush bounded by DISPOSE_FLUSH_MS, then every RushDB request still open is cancelled.

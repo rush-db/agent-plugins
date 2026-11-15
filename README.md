@@ -125,8 +125,9 @@ hooks log the error and exit cleanly.
   `off` to stop sending.
 - **DeepSeek Harness** uploads session logs to DeepSeek by default, and
   recalled context becomes part of the session. `@rushdb/dsh` has an option
-  (`excludeFromLogUpload`) to keep every session that received RushDB context
-  out of that upload; dsh can only skip whole sessions.
+  (`excludeFromLogUpload`) that skips a session's uploads from its first
+  RushDB context on; dsh can only skip whole upload requests, so earlier
+  uploads have already gone out.
 
 ## Self-hosted RushDB
 
