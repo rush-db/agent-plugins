@@ -44,6 +44,31 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
       - name: No symlinks in the repo
         run: test -z "$(git ls-files -s | awk '$1 == "120000"')"
+      - name: Codex marketplace and plugin
+        run: pnpm check:codex
+      - name: OpenAI directory ZIP (hooks-free)
+        run: pnpm build:openai-zip && pnpm check:openai
+
+  codex:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # A real `codex exec` against local fake services: install, MCP, skills,
+      # nothing sent while automatic context is off, and plugin hooks firing.
+      - name: Codex 0.169.0 runs the plugin and its hooks
+        run: |
+          npm install -g @openai/codex@0.169.0
+          scripts/smoke/codex.sh
+      # Flags a Codex release that changes how plugin hooks load (for example
+      # portable plugin.json support, so the plugin can move to that layout).
+      - name: The latest Codex runs the plugin and its hooks
+        continue-on-error: true
+        run: |
+          npm install -g @openai/codex@latest
+          scripts/smoke/codex.sh
 
   claude:
     runs-on: ubuntu-latest
