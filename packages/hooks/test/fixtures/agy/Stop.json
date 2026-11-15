@@ -1,0 +1,13 @@
+{
+  "conversationId": "agy-session",
+  "workspacePaths": ["CWD"],
+  "transcriptPath": "TRANSCRIPT",
+  "modelName": "auto",
+  "lastUserInput": "Which package manager do we use?",
+  "hookEventName": "Stop",
+  "cwd": "CWD",
+  "executionNum": 0,
+  "terminationReason": "NO_TOOL_CALL",
+  "fullyIdle": true,
+  "continuationActive": false
+}
