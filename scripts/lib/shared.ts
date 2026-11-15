@@ -43,6 +43,11 @@ export interface SkillsPin {
   repository: string
   tag: string
   skills: string[]
+  /**
+   * Temporary: the full commit to sync while `tag` is not released yet.
+   * Remove it and resync once the tag exists.
+   */
+  pendingCommit?: string
 }
 
 export interface Shared {
@@ -158,6 +163,9 @@ export function validateSkillsPin(pin: SkillsPin): string[] {
       if (!isString(skill) || !NAME.test(skill)) errors.push(`skill ${JSON.stringify(skill)} must be kebab-case`)
     }
     if (new Set(pin.skills).size !== pin.skills.length) errors.push('skills must be unique')
+  }
+  if (pin.pendingCommit !== undefined && !/^[0-9a-f]{40}$/.test(pin.pendingCommit)) {
+    errors.push('pendingCommit must be a full 40-character commit hash')
   }
   return errors
 }

@@ -18,6 +18,8 @@ export interface SkillsSource {
   commit: string
   skills: string[]
   sha256: string
+  /** True while the tag is not released and the skills come from `SkillsPin.pendingCommit`. */
+  pending: boolean
 }
 
 /** Checks that SKILL.md opens with YAML front matter holding a string `name` and `description`. */
@@ -78,6 +80,7 @@ export function formatSkillsSource(source: SkillsSource): string {
     `repository: ${source.repository}`,
     `tag: ${source.tag}`,
     `commit: ${source.commit}`,
+    ...(source.pending ? [`status: pending ${source.tag}; synced from an untagged commit`] : []),
     `skills: ${source.skills.join(', ')}`,
     `sha256: ${source.sha256}`,
     ''
@@ -103,7 +106,8 @@ export function parseSkillsSource(text: string): SkillsSource {
     skills: field('skills')
       .split(',')
       .map((skill) => skill.trim()),
-    sha256: field('sha256')
+    sha256: field('sha256'),
+    pending: fields.has('status')
   }
 }
 
@@ -123,6 +127,12 @@ export async function checkSkills(root: string, pin: SkillsPin): Promise<string[
   }
   const errors: string[] = []
   if (source.tag !== pin.tag) errors.push(`skills are synced from ${source.tag} but shared/skills.json pins ${pin.tag}`)
+  if (pin.pendingCommit !== undefined && (!source.pending || source.commit !== pin.pendingCommit)) {
+    errors.push(`skills are not synced from the pending commit ${pin.pendingCommit}`)
+  }
+  if (pin.pendingCommit === undefined && source.pending) {
+    errors.push(`skills come from an untagged commit but shared/skills.json pins the released ${pin.tag}`)
+  }
   if (source.repository !== pin.repository) errors.push(`skills come from ${source.repository}, not ${pin.repository}`)
   if (source.skills.join(',') !== pin.skills.join(',')) {
     errors.push('the synced skill list differs from shared/skills.json')
@@ -156,6 +166,7 @@ function git(args: string[], cwd?: string): string {
 /**
  * Copies the pinned skills from `repository` (a URL or a local path) at `pin.tag` into
  * `<root>/skills`, through `git archive` of a shallow fetch, and writes SKILLS_SOURCE.
+ * While the tag is unreleased, `pin.pendingCommit` is fetched instead and recorded as pending.
  * Nothing in `skills/` changes unless every check passes.
  */
 export async function syncSkills(root: string, pin: SkillsPin, repository = pin.repository): Promise<SkillsSource> {
@@ -163,10 +174,12 @@ export async function syncSkills(root: string, pin: SkillsPin, repository = pin.
   try {
     const bare = join(work, 'repo.git')
     git(['init', '--quiet', '--bare', bare])
-    git(['fetch', '--quiet', '--depth', '1', repository, `refs/tags/${pin.tag}:refs/tags/${pin.tag}`], bare)
-    const commit = git(['rev-parse', `${pin.tag}^{commit}`], bare)
+    const pending = pin.pendingCommit !== undefined
+    const ref = pending ? `refs/pending/${pin.tag}` : `refs/tags/${pin.tag}`
+    git(['fetch', '--quiet', '--depth', '1', repository, `${pin.pendingCommit ?? ref}:${ref}`], bare)
+    const commit = git(['rev-parse', `${ref}^{commit}`], bare)
     const archive = join(work, 'skills.tar')
-    git(['archive', '--format=tar', `--output=${archive}`, pin.tag, ...pin.skills], bare)
+    git(['archive', '--format=tar', `--output=${archive}`, ref, ...pin.skills], bare)
     const extracted = join(work, 'out')
     await mkdir(extracted)
     execFileSync('tar', ['-xf', archive, '-C', extracted])
@@ -179,7 +192,8 @@ export async function syncSkills(root: string, pin: SkillsPin, repository = pin.
       tag: pin.tag,
       commit,
       skills: pin.skills,
-      sha256: await hashSkillsTree(extracted)
+      sha256: await hashSkillsTree(extracted),
+      pending
     }
     await writeFile(join(extracted, SKILLS_SOURCE), formatSkillsSource(source))
     const target = join(root, SKILLS_DIR)

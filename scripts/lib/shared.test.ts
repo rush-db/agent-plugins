@@ -96,6 +96,13 @@ describe('validateSkillsPin', () => {
     ])
   })
 
+  it('accepts only a full commit hash as pendingCommit', () => {
+    expect(validateSkillsPin({ ...pin, pendingCommit: '5c57d5ba4280f24ac5440ac4ccd5a1744070c02d' })).toEqual([])
+    expect(validateSkillsPin({ ...pin, pendingCommit: '5c57d5b' })).toEqual([
+      'pendingCommit must be a full 40-character commit hash'
+    ])
+  })
+
   it('compares tags numerically', () => {
     expect(compareTags('v3.0.10', 'v3.0.4')).toBe(1)
     expect(compareTags('v3.0.4', 'v3.0.4')).toBe(0)
