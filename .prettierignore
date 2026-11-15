@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+pnpm-lock.yaml
+CHANGELOG.md
+*.md
+
+# Synced and generated output is written by scripts/sync-skills.ts and scripts/build.ts.
+skills/
+plugins/

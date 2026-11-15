@@ -1,0 +1,35 @@
+{
+  "name": "rushdb-agent-plugins",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RushDB plugins and extensions for agent platforms: MCP tools, skills and optional automatic context",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.ts",
+    "sync:skills": "node scripts/sync-skills.ts",
+    "lint": "prettier --check .",
+    "format": "prettier --write .",
+    "types:check": "tsc --noEmit",
+    "test": "vitest run",
+    "changeset": "changeset"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.10",
+    "@types/node": "^22.15.0",
+    "prettier": "^3.4.2",
+    "typescript": "5.7.2",
+    "vitest": "^1.6.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rush-db/agent-plugins.git"
+  },
+  "bugs": "https://github.com/rush-db/agent-plugins/issues",
+  "homepage": "https://github.com/rush-db/agent-plugins#readme",
+  "packageManager": "pnpm@10.1.0",
+  "engines": {
+    "node": ">=22.18.0",
+    "pnpm": ">=10.0.0"
+  }
+}

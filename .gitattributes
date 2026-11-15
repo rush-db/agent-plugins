@@ -1,0 +1,9 @@
+* text=auto eol=lf
+
+*.png binary
+*.zip binary
+
+# Generated and synced files: collapsed in diffs, rebuilt by `pnpm build` and `pnpm sync:skills`.
+skills/** linguist-generated=true
+plugins/** linguist-generated=true
+pnpm-lock.yaml linguist-generated=true
