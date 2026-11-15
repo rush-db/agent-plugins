@@ -64,6 +64,18 @@ jobs:
         continue-on-error: true
         run: $CLAUDE plugin validate --strict --profile directory ./plugins/claude/rushdb
 
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Relative links and anchors in the hand-written docs. Offline, so links to
+      # pages that go live later (this repository, the listings) don't fail it.
+      - name: Check links in the docs
+        run: >-
+          docker run --rm -v "$PWD:/input" -w /input lycheeverse/lychee:0.24.2
+          --offline --include-fragments --no-progress
+          README.md CONTRIBUTING.md SECURITY.md '.changeset/*.md' 'shared/*.md' 'submissions/*.md'
+
   secrets:
     runs-on: ubuntu-latest
     steps:

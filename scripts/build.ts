@@ -11,7 +11,12 @@ import { geminiExtension } from './targets/gemini.ts'
 /** Turns the shared sources into files. Each platform step adds its generator here. */
 export type Generator = (shared: Shared, root: string) => Promise<GeneratedFile[]> | GeneratedFile[]
 
-export const generators: Generator[] = [(_shared, root) => hookBundles(root), claudePlugin, geminiExtension, antigravityPlugin]
+export const generators: Generator[] = [
+  (_shared, root) => hookBundles(root),
+  claudePlugin,
+  geminiExtension,
+  antigravityPlugin
+]
 
 /** Top-level paths that hold generated output and must never contain symlinks. */
 export const GENERATED_ROOTS = [
