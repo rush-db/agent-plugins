@@ -1,0 +1,24 @@
+{
+  "serverName": "rushdb",
+  "hosted": {
+    "type": "http",
+    "url": "https://mcp.rushdb.com/mcp"
+  },
+  "stdio": {
+    "package": "@rushdb/mcp-server",
+    "version": "3.4.1",
+    "env": {
+      "RUSHDB_API_KEY": {
+        "description": "RushDB API key",
+        "required": true,
+        "sensitive": true
+      },
+      "RUSHDB_API_URL": {
+        "description": "RushDB API URL; change it for a self-hosted engine",
+        "required": false,
+        "sensitive": false,
+        "default": "https://api.rushdb.com/api/v1"
+      }
+    }
+  }
+}

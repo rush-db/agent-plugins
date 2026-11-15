@@ -1,0 +1,34 @@
+{
+  "name": "rushdb",
+  "displayName": "RushDB",
+  "fallbackName": "rushdb-ai",
+  "fallbackDisplayName": "RushDB AI",
+  "tagline": "Query and search your data",
+  "description": "RushDB for agents: search, query and analyze your data with RushDB MCP tools and skills, with optional automatic context across sessions.",
+  "longDescription": "RushDB gives your agent a database it can search, query and analyze. The plugin connects the RushDB MCP tools and ships skills for building queries, faceted search, data modeling and agent context. Use it for RAG over your records, structured and semantic search, relationship traversal and agentic analytics such as counts, groupings and time series. Optional automatic context, off by default, recalls relevant earlier work at session start and stores finished turns in your RushDB project.",
+  "keywords": [
+    "rushdb",
+    "mcp",
+    "database",
+    "rag",
+    "semantic-search",
+    "vector-search",
+    "knowledge-graph",
+    "graph-database",
+    "analytics",
+    "agent-context"
+  ],
+  "author": {
+    "name": "RushDB",
+    "url": "https://rushdb.com"
+  },
+  "license": "Apache-2.0",
+  "urls": {
+    "homepage": "https://rushdb.com",
+    "docs": "https://docs.rushdb.com",
+    "repository": "https://github.com/rush-db/agent-plugins",
+    "support": "https://github.com/rush-db/agent-plugins/issues",
+    "privacyPolicy": null,
+    "termsOfService": null
+  }
+}
