@@ -27,6 +27,25 @@ importers:
         specifier: ^2.6.1
         version: 2.9.1
 
+  packages/core:
+    dependencies:
+      '@rushdb/agent-memory-contract':
+        specifier: ^0.3.1
+        version: 0.3.1
+      '@rushdb/javascript-sdk':
+        specifier: ^3.4.0
+        version: 3.4.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22.15.0
+        version: 22.20.5
+      typescript:
+        specifier: 5.7.2
+        version: 5.7.2
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@22.20.5)
+
 packages:
 
   '@babel/runtime@7.29.14':
@@ -389,6 +408,14 @@ packages:
     resolution: {integrity: sha512-ADb1Uz2MNM0sxVpAlMNdQG16Hw4sgW1aqVL7NeqBMpcZeiHb192d7W6shZdMQs33D+w9ihDYBBPsYqqc4MlD8w==}
     cpu: [x64]
     os: [win32]
+
+  '@rushdb/agent-memory-contract@0.3.1':
+    resolution: {integrity: sha512-07M7DUfh1NouyNWG/fg+r/TZLqy3bQKLD+xAkLzVjSUwme07wPt/adwCaI0TY1zY2TcSj8YUVYg3YP1CN2Kp7g==}
+    engines: {node: '>=18.0.0', pnpm: '>=10.0.0'}
+
+  '@rushdb/javascript-sdk@3.4.0':
+    resolution: {integrity: sha512-kZCCEA3TxxQpK5zEXODw+v3lT4HtJ3Ad1jh6MuY8tngk9ZRAfaATTSviAr8VS0xyH91n4Ahr6NXP0D7k3/wUDw==}
+    engines: {node: '>=18.0.0', pnpm: '>=10.0.0'}
 
   '@sinclair/typebox@0.27.12':
     resolution: {integrity: sha512-hhyNJ+nbR6ZR7pToHvllEFun9TL0sbL+tk/ON75lo+Xas054uez98qRbsuNt7MBCyZKK4+8Yli/OAGZhmfBZ/g==}
@@ -1313,6 +1340,12 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.68.3':
     optional: true
+
+  '@rushdb/agent-memory-contract@0.3.1':
+    dependencies:
+      '@rushdb/javascript-sdk': 3.4.0
+
+  '@rushdb/javascript-sdk@3.4.0': {}
 
   '@sinclair/typebox@0.27.12': {}
 
