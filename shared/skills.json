@@ -1,5 +1,6 @@
 {
   "repository": "https://github.com/rush-db/skills.git",
-  "tag": "v3.0.4",
+  "tag": "v3.0.5",
+  "pendingCommit": "5c57d5ba4280f24ac5440ac4ccd5a1744070c02d",
   "skills": ["rushdb-query-builder", "rushdb-data-modeling", "rushdb-faceted-search", "rushdb-agent-memory"]
 }

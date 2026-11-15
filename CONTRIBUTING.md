@@ -15,6 +15,9 @@ build. Never edit them by hand:
 - To update the synced skills, change the tag in `shared/skills.json` and run
   `pnpm sync:skills`. Pass `--repo <path or URL>` to read from a local
   `rush-db/skills` checkout instead of GitHub.
+- While a skills tag is not released yet, `shared/skills.json` may carry a
+  `pendingCommit` (full hash) that is synced instead; `skills/SKILLS_SOURCE`
+  then says `status: pending <tag>`. Remove it and resync once the tag exists.
 
 CI runs `pnpm build --check` and fails when a committed file differs from what
 the build writes.

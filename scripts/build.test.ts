@@ -22,7 +22,9 @@ beforeEach(async () => {
   work = await mkdtemp(join(tmpdir(), 'agent-plugins-build-'))
   root = join(work, 'repo')
   await cp(join(repoRoot, 'shared'), join(root, 'shared'), { recursive: true })
-  const pin: SkillsPin = { ...JSON.parse(await readFile(join(root, 'shared/skills.json'), 'utf8')), tag: 'v3.0.5' }
+  // The fixture repo has only a tag, so drop any pending commit the committed pin carries.
+  const { pendingCommit: _, ...committed } = JSON.parse(await readFile(join(root, 'shared/skills.json'), 'utf8'))
+  const pin: SkillsPin = { ...committed, tag: 'v3.0.5' }
   await writeFile(join(root, 'shared/skills.json'), json(pin))
   const upstream = join(work, 'skills')
   await createSkillsRepo(
