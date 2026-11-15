@@ -1,0 +1,101 @@
+{
+  "name": "@rushdb/dsh",
+  "version": "0.0.0",
+  "description": "RushDB for DeepSeek Harness: search, query and analyze your data with RushDB tools, with optional automatic context across sessions",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "lib/index.js",
+  "icon": "./icon.png",
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./locale/*.json": "./locale/*.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.png",
+    "README.md"
+  ],
+  "keywords": [
+    "rushdb",
+    "dsh-plugin",
+    "deepseek-harness",
+    "database",
+    "rag",
+    "semantic-search",
+    "vector-search",
+    "knowledge-graph",
+    "analytics",
+    "agent-context"
+  ],
+  "homepage": "https://github.com/rush-db/agent-plugins/tree/main/packages/dsh#readme",
+  "bugs": "https://github.com/rush-db/agent-plugins/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rush-db/agent-plugins.git",
+    "directory": "packages/dsh"
+  },
+  "author": {
+    "name": "RushDB",
+    "url": "https://rushdb.com"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "dsh": ">=0.2.2-0 <0.3.0",
+    "node": ">=22.19.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.ts",
+    "prepack": "node scripts/build.ts",
+    "market-index": "node scripts/market-index.ts",
+    "smoke": "bash scripts/smoke.sh",
+    "types:check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:integration": "node ../core/scripts/with-engine.mjs"
+  },
+  "dependencies": {
+    "@rushdb/agent-memory-contract": "^0.3.1",
+    "@rushdb/javascript-sdk": "^3.4.0",
+    "undici": "^8.11.2"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.1.0",
+    "@deepseek-ai/dsh-credentials": ">=0.2.2-0 <0.3.0",
+    "@deepseek-ai/dsh-http-proxy": ">=0.2.2-0 <0.3.0",
+    "@deepseek-ai/dsh-launch-environment": ">=0.2.2-0 <0.3.0",
+    "@deepseek-ai/dsh-llm": ">=0.2.2-0 <0.3.0",
+    "@deepseek-ai/dsh-tools": ">=0.2.2-0 <0.3.0",
+    "@deepseek-ai/schemastery": "~3.19.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "~4.1.0",
+    "@deepseek-ai/dsh-agent": "0.2.2-rc.3",
+    "@deepseek-ai/dsh-compaction": "0.2.2-rc.3",
+    "@deepseek-ai/dsh-credentials": "0.2.2-rc.3",
+    "@deepseek-ai/dsh-http-proxy": "0.2.2-rc.3",
+    "@deepseek-ai/dsh-launch-environment": "0.2.2-rc.3",
+    "@deepseek-ai/dsh-llm": "0.2.2-rc.3",
+    "@deepseek-ai/dsh-plugin-market-index": "0.2.2-rc.3",
+    "@deepseek-ai/dsh-session": "0.2.2-rc.3",
+    "@deepseek-ai/dsh-session-log-deepseek": "0.2.2-rc.3",
+    "@deepseek-ai/dsh-session-projection": "0.2.2-rc.3",
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.3",
+    "@deepseek-ai/schemastery": "~3.19.0",
+    "@rushdb/agent-plugins-core": "workspace:*",
+    "@types/node": "^22.15.0",
+    "esbuild": "0.25.12",
+    "typescript": "5.7.2",
+    "vitest": "^1.6.1",
+    "yaml": "^2.6.1"
+  }
+}
