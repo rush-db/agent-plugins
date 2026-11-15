@@ -3,7 +3,10 @@
 //   POST /v1/responses   a model provider (Responses API, streamed) that answers with the text in <answer file>
 //   POST /v1/embeddings  an OpenAI-compatible embedder (hashed bag of words), for a local engine in direct mode
 //   /api/v1/*            a RushDB API that answers every request with an empty success
-// Every request is appended to <requests.jsonl>; the answer file is read again for each model request. Prints the port, then serves until killed.
+//   proxy                with HTTPS_PROXY and HTTP_PROXY pointing here, every outside request Codex makes is logged
+//                        (method CONNECT or PROXY, path = its target) and refused, so nothing leaves the machine
+// Every request is appended to <requests.jsonl>; the answer file is read again for each model request. Prints the
+// port, then serves until killed.
 import { createHash } from 'node:crypto'
 import { appendFileSync, readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
@@ -65,6 +68,11 @@ const server = createServer((request, response) => {
   request.on('data', (chunk) => (body += chunk))
   request.on('end', () => {
     const path = request.url ?? ''
+    // A proxied plain-HTTP request names an absolute URL: log it and refuse it.
+    if (/^https?:\/\//.test(path)) {
+      appendFileSync(log, `${JSON.stringify({ at: Date.now(), method: 'PROXY', path })}\n`)
+      return json(response, 403, { error: 'outside requests are blocked in the smoke test' })
+    }
     appendFileSync(log, `${JSON.stringify({ at: Date.now(), method: request.method, path, body })}\n`)
     if (request.method === 'POST' && path.endsWith('/v1/responses')) return respond(response)
     if (request.method === 'POST' && path.endsWith('/v1/embeddings')) {
@@ -75,5 +83,10 @@ const server = createServer((request, response) => {
     if (path.startsWith('/api/v1/')) return json(response, 200, { success: true, data: [], total: 0 })
     json(response, 404, { error: 'not found' })
   })
+})
+// HTTPS through the proxy: log the target host and refuse the tunnel, so no connection is made.
+server.on('connect', (request, socket) => {
+  appendFileSync(log, `${JSON.stringify({ at: Date.now(), method: 'CONNECT', path: request.url ?? '' })}\n`)
+  socket.end('HTTP/1.1 403 Forbidden\r\n\r\n')
 })
 server.listen(0, '127.0.0.1', () => console.log(server.address().port))
