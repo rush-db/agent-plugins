@@ -11,6 +11,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -47,6 +48,7 @@ jobs:
 
   claude:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       CLAUDE: npx -y @anthropic-ai/claude-code@2.1.309
     steps:
@@ -66,6 +68,7 @@ jobs:
 
   links:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       # Relative links and anchors in the hand-written docs. Offline, so links to
@@ -78,6 +81,7 @@ jobs:
 
   secrets:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
