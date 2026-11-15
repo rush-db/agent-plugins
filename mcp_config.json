@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "rushdb": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@rushdb/mcp-server@3.4.1"
+      ],
+      "env": {
+        "RUSHDB_API_KEY": "${RUSHDB_API_KEY}"
+      },
+      "variables": [
+        {
+          "name": "RUSHDB_API_KEY",
+          "title": "RushDB API key",
+          "description": "RushDB API key, from your project settings in RushDB",
+          "link": "https://docs.rushdb.com"
+        }
+      ]
+    }
+  }
+}

@@ -29,6 +29,19 @@ jobs:
       # Regenerates every platform folder in memory, runs the validators and
       # fails when a committed file differs from what the build writes.
       - run: pnpm build --check
+      - name: Gemini CLI validates the root extension
+        run: npx -y @google/gemini-cli@0.68.0 extensions validate .
+      # The installer has no version pin; it always fetches the latest agy.
+      - name: Install the Antigravity CLI
+        run: curl -fsSL https://antigravity.google/cli/install.sh | bash -s -- --dir "$RUNNER_TEMP/agy"
+      - name: agy validates the root plugin (known Gemini-root warnings only)
+        run: pnpm check:antigravity
+        env:
+          AGY_BIN: ${{ runner.temp }}/agy/agy
+      - name: No GitHub Release breaks Gemini installs
+        run: pnpm check:releases
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: No symlinks in the repo
         run: test -z "$(git ls-files -s | awk '$1 == "120000"')"
 

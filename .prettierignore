@@ -11,3 +11,12 @@ plugins/
 
 # The hook bundle is esbuild output, written by scripts/build.ts.
 hooks/rushdb-hooks.mjs
+
+# Gemini CLI extension and Antigravity plugin files at the root, written by scripts/build.ts.
+gemini-extension.json
+hooks/hooks.json
+commands/
+.antigravity-plugin/
+mcp_config.json
+/hooks.json
+rules/

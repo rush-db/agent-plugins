@@ -1,0 +1,9 @@
+description = "Store a decision, task or preference in RushDB"
+prompt = """
+Store this in the user's RushDB project so later sessions can find it: {{args}}
+
+1. Call `getSchemaMarkdown` if you have not done so in this session.
+2. Pick the label that fits, following the `rushdb-agent-memory` skill: `DECISION`, `TASK`, `ENTITY`, `PREFERENCE` or `ARTIFACT`. Reuse labels and property names that already exist in the project; otherwise use the skill's names, such as `topic`, `decision`, `rationale` and `decidedAt` for a decision, or `title`, `status` and `createdAt` for a task.
+3. Write one record with `createRecord`, with the current date and time in ISO 8601. Do not store secrets or credentials.
+4. Reply with the label and the main fields you stored.
+"""

@@ -1,0 +1,56 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "name": "rushdb-recall",
+            "command": "node \"${extensionPath}${/}hooks${/}rushdb-hooks.mjs\" recall --host gemini",
+            "timeout": 10000,
+            "description": "Recall earlier context from RushDB when automatic context is on"
+          }
+        ]
+      }
+    ],
+    "AfterAgent": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "name": "rushdb-capture",
+            "command": "node \"${extensionPath}${/}hooks${/}rushdb-hooks.mjs\" capture --host gemini",
+            "timeout": 30000,
+            "description": "Queue the finished turn for RushDB (recall+persist only)"
+          }
+        ]
+      }
+    ],
+    "PreCompress": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "name": "rushdb-precompact",
+            "command": "node \"${extensionPath}${/}hooks${/}rushdb-hooks.mjs\" precompact --host gemini",
+            "timeout": 30000,
+            "description": "Send queued turns to RushDB before compression"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "name": "rushdb-end",
+            "command": "node \"${extensionPath}${/}hooks${/}rushdb-hooks.mjs\" end --host gemini",
+            "timeout": 2000,
+            "description": "Hand queued turns to a background flush and return"
+          }
+        ]
+      }
+    ]
+  }
+}

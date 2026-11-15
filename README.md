@@ -15,7 +15,7 @@ default**.
 | Claude Code | `/plugin install rushdb --marketplace rush-db/agent-plugins` | optional, off by default | OAuth (hosted) |
 | Qwen Code | `qwen extensions install rush-db/agent-plugins:rushdb` | optional, off by default | to be confirmed |
 | Gemini CLI | `gemini extensions install https://github.com/rush-db/agent-plugins` | optional, off by default | API key |
-| Antigravity | `agy plugin install https://github.com/rush-db/agent-plugins` | optional, off by default | API key |
+| Antigravity | `agy plugin install https://github.com/rush-db/agent-plugins` (native plugin from the same root; the RushDB guidance loads as an always-on rule) | optional, off by default; recall at session start only, no turn capture yet | API key |
 | Codex | `codex plugin marketplace add rush-db/agent-plugins` | optional, off by default | OAuth (hosted) |
 | Pi | `pi install npm:@rushdb/pi` | optional, off by default | to be confirmed |
 | DeepSeek Harness | `dsh plugin --profile <p> add @rushdb/dsh` | optional, off by default | API key |

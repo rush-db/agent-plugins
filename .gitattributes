@@ -7,3 +7,11 @@
 skills/** linguist-generated=true
 plugins/** linguist-generated=true
 pnpm-lock.yaml linguist-generated=true
+gemini-extension.json linguist-generated=true
+GEMINI.md linguist-generated=true
+hooks/hooks.json linguist-generated=true
+commands/** linguist-generated=true
+.antigravity-plugin/** linguist-generated=true
+mcp_config.json linguist-generated=true
+/hooks.json linguist-generated=true
+rules/** linguist-generated=true

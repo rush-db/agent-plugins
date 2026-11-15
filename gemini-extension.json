@@ -1,0 +1,39 @@
+{
+  "name": "rushdb",
+  "version": "0.1.0",
+  "description": "RushDB for agents: search, query and analyze your data with RushDB MCP tools and skills, with optional automatic context across sessions.",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "rushdb": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@rushdb/mcp-server@3.4.1"
+      ],
+      "env": {
+        "RUSHDB_API_KEY": "${RUSHDB_API_KEY}",
+        "RUSHDB_API_URL": "${RUSHDB_API_URL:-https://api.rushdb.com/api/v1}"
+      }
+    }
+  },
+  "settings": [
+    {
+      "name": "RushDB API key",
+      "description": "RushDB API key",
+      "envVar": "RUSHDB_API_KEY",
+      "sensitive": true
+    },
+    {
+      "name": "RushDB API URL",
+      "description": "RushDB API URL; change it for a self-hosted engine",
+      "envVar": "RUSHDB_API_URL",
+      "sensitive": false
+    },
+    {
+      "name": "RushDB automatic context",
+      "description": "off (default), recall, or recall+persist. recall adds earlier sessions at session start; recall+persist also stores finished turns in your RushDB project.",
+      "envVar": "RUSHDB_AUTO_CONTEXT",
+      "sensitive": false
+    }
+  ]
+}

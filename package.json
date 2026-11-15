@@ -8,6 +8,8 @@
   "scripts": {
     "build": "node scripts/build.ts",
     "sync:skills": "node scripts/sync-skills.ts",
+    "check:antigravity": "node scripts/check-antigravity.ts",
+    "check:releases": "node scripts/check-releases.ts",
     "lint": "prettier --check .",
     "format": "prettier --write .",
     "types:check": "tsc --noEmit",
