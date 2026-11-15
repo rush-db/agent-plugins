@@ -1,0 +1,9 @@
+{
+  "session_id": "claude-session",
+  "transcript_path": "TRANSCRIPT",
+  "cwd": "CWD",
+  "permission_mode": "default",
+  "hook_event_name": "Stop",
+  "stop_hook_active": false,
+  "last_assistant_message": "Decision: use pnpm workspaces, never npm."
+}

@@ -1,0 +1,8 @@
+{
+  "session_id": "gemini-session",
+  "transcript_path": "TRANSCRIPT",
+  "cwd": "CWD",
+  "hook_event_name": "SessionEnd",
+  "timestamp": "2026-11-15T10:00:07.000Z",
+  "reason": "exit"
+}

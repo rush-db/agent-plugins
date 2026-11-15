@@ -1,13 +1,14 @@
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { findDrift, findSymlinks, writeGenerated, type GeneratedFile } from './lib/files.ts'
+import { hookBundles } from './lib/hooks.ts'
 import { loadShared, type Shared } from './lib/shared.ts'
 import { checkSkills } from './lib/skills.ts'
 
 /** Turns the shared sources into files. Each platform step adds its generator here. */
 export type Generator = (shared: Shared, root: string) => Promise<GeneratedFile[]> | GeneratedFile[]
 
-export const generators: Generator[] = []
+export const generators: Generator[] = [(_shared, root) => hookBundles(root)]
 
 /** Top-level paths that hold generated output and must never contain symlinks. */
 export const GENERATED_ROOTS = ['skills', 'plugins', 'hooks', 'commands', '.claude-plugin', '.agents']

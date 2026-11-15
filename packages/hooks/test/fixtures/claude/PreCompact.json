@@ -1,0 +1,8 @@
+{
+  "session_id": "claude-session",
+  "transcript_path": "TRANSCRIPT",
+  "cwd": "CWD",
+  "hook_event_name": "PreCompact",
+  "trigger": "auto",
+  "custom_instructions": ""
+}

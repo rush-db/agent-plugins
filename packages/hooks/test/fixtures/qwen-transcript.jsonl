@@ -1,0 +1,2 @@
+{"type":"user","message":{"role":"user","parts":[{"text":"Which package manager do we use?"}]},"sessionId":"qwen-session"}
+{"type":"assistant","message":{"role":"model","parts":[{"text":"Decision: use pnpm workspaces, never npm."}]},"sessionId":"qwen-session"}

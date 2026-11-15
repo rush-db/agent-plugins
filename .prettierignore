@@ -8,3 +8,6 @@ CHANGELOG.md
 # Synced and generated output is written by scripts/sync-skills.ts and scripts/build.ts.
 skills/
 plugins/
+
+# The hook bundle is esbuild output, written by scripts/build.ts.
+hooks/rushdb-hooks.mjs

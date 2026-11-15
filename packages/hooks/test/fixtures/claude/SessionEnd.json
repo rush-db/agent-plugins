@@ -1,0 +1,8 @@
+{
+  "session_id": "claude-session",
+  "transcript_path": "TRANSCRIPT",
+  "cwd": "CWD",
+  "prompt_id": "p1",
+  "hook_event_name": "SessionEnd",
+  "reason": "other"
+}

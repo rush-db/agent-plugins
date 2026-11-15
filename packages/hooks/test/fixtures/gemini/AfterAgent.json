@@ -1,0 +1,10 @@
+{
+  "session_id": "gemini-session",
+  "transcript_path": "TRANSCRIPT",
+  "cwd": "CWD",
+  "hook_event_name": "AfterAgent",
+  "timestamp": "2026-11-15T10:00:05.000Z",
+  "prompt": "Which package manager do we use?",
+  "prompt_response": "Decision: use pnpm workspaces, never npm.",
+  "stop_hook_active": false
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@rushdb/agent-plugins-hooks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hook CLI for the RushDB agent plugins, bundled by scripts/build.ts into rushdb-hooks.mjs",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./bundle": "./src/bundle.ts"
+  },
+  "scripts": {
+    "types:check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:integration": "node ../core/scripts/with-engine.mjs"
+  },
+  "dependencies": {
+    "@rushdb/agent-memory-contract": "^0.3.1",
+    "@rushdb/agent-plugins-core": "workspace:*",
+    "@rushdb/javascript-sdk": "^3.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "esbuild": "0.25.12",
+    "typescript": "5.7.2",
+    "vitest": "^1.6.1"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  }
+}

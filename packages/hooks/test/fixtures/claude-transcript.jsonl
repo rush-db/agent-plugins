@@ -1,0 +1,7 @@
+{"type":"permission-mode","permissionMode":"default","sessionId":"claude-session"}
+{"type":"user","message":{"role":"user","content":"Which package manager do we use?"},"sessionId":"claude-session","isSidechain":false}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"t1","name":"Bash","input":{}}]},"sessionId":"claude-session"}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","content":"pnpm-lock.yaml"}]},"toolUseResult":{},"sessionId":"claude-session"}
+{"type":"user","message":{"role":"user","content":"<local-command-stdout>ok</local-command-stdout>"},"sessionId":"claude-session"}
+{"type":"user","message":{"role":"user","content":"Caveat: meta"},"isMeta":true,"sessionId":"claude-session"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Decision: use pnpm workspaces, never npm."}]},"sessionId":"claude-session"}

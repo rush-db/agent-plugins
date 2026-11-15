@@ -1,0 +1,8 @@
+{
+  "session_id": "codex-session",
+  "transcript_path": null,
+  "cwd": "CWD",
+  "hook_event_name": "SessionEnd",
+  "model": "gpt-5.5-codex",
+  "reason": "other"
+}
