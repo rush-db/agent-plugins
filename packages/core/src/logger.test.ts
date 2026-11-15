@@ -24,8 +24,12 @@ describe('createFileLogger', () => {
     expect(await readFile(join(stateDir, 'hooks.log'), 'utf8')).toMatch(/this line does not fit\n$/)
   })
 
-  it('never throws when the log cannot be written', () => {
-    const logger = createFileLogger('/proc/rushdb-not-writable')
+  it('never throws when the log cannot be written', async () => {
+    // A regular file as the parent makes mkdir fail at once (ENOTDIR). Avoid /proc paths: recursive
+    // mkdirSync never returns for them on Linux.
+    const file = join(await mkdtemp(join(tmpdir(), 'rushdb-core-log-')), 'not-a-directory')
+    await writeFile(file, '')
+    const logger = createFileLogger(join(file, 'state'))
     expect(() => logger.warn('dropped')).not.toThrow()
   })
 })
