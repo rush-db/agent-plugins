@@ -6,12 +6,14 @@
  * - Optional, off by default: automatic context. `autoContext.recall` adds context from earlier sessions before the
  *   first step of each turn; `autoContext.capture` stores each finished turn through a durable outbox. With both off,
  *   the plugin registers no listeners, makes no network calls and writes no files.
+ * - Every RushDB request has a deadline (src/transport.ts), and unloading cancels whatever is still open.
  *
  * Keys are read by credential name (`RUSHDB_API_KEY` by default), never from the config itself.
  */
 import { ClientCache } from './client.ts'
 import { Config, resolveSettings } from './config.ts'
 import { AutoContext } from './context.ts'
+import { excludeContextSessions } from './exclusion.ts'
 import { secretSource, type Context } from './host.ts'
 import { createTools } from './tools.ts'
 import type { Logger } from '@rushdb/agent-plugins-core'
@@ -45,10 +47,22 @@ export function apply(ctx: Context, config: Config): void {
   const settings = resolveSettings(config)
   const clients = new ClientCache(settings, secretSource(ctx))
   const logger = createLogger(ctx, () => clients.secrets())
+  const auto = new AutoContext({ settings, clients, logger })
 
   for (const tool of createTools({ settings, clients })) ctx.tools.register(tool)
 
-  const auto = new AutoContext({ settings, clients, logger })
+  // Also with automatic context off: a session that got RushDB context earlier stays out of the upload on resume.
+  if (settings.excludeFromLogUpload) excludeContextSessions(ctx, auto.injectedSessions)
+
+  // On unload: a flush bounded by DISPOSE_FLUSH_MS, then every RushDB request still open is cancelled.
+  ctx.effect(() => {
+    auto.start()
+    return async () => {
+      await auto.dispose()
+      clients.close()
+    }
+  }, 'rushdb')
+
   if (!auto.enabled) return
 
   ctx.on('agent/created', ({ agent }) => {
@@ -59,16 +73,4 @@ export function apply(ctx: Context, config: Config): void {
   ctx.on('session/event', (session, event) => auto.onSessionEvent(session, event))
   ctx.on('agent/disposed', ({ agent }) => auto.onSessionGone(agent.id))
   ctx.on('session/disposed', (session) => auto.onSessionGone(session.id))
-
-  if (settings.excludeFromLogUpload) {
-    // Only when the base bundle's session-log upload is loaded; a whole session is the smallest unit it can skip.
-    ctx.inject(['sessionLogDeepSeek'], (child) => {
-      void child.sessionLogDeepSeek.registerExclusion((request) => auto.injectedSessions.has(request.sessionId))
-    })
-  }
-
-  ctx.effect(() => {
-    auto.start()
-    return () => auto.dispose()
-  }, 'rushdb.autoContext')
 }

@@ -8,13 +8,14 @@ import type { ContextFormed, UserMessage } from '@deepseek-ai/dsh-llm'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-compaction'
 import type {} from '@deepseek-ai/dsh-session-log-deepseek'
+import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 
 export { default as z } from '@deepseek-ai/schemastery'
 export { createUserMessage } from '@deepseek-ai/dsh-llm'
 export { defineTool } from '@deepseek-ai/dsh-tools'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import { launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
-export type { Agent, Context, PreStepDecision, Session, SessionEvent, UserMessage }
+export type { Agent, Context, PreStepDecision, ProjectionDefinition, Session, SessionEvent, UserMessage }
 
 /** Source kind of the message that carries recalled context, so it never reads as something the user typed. */
 export const CONTEXT_SOURCE_KIND = 'rushdb-context'

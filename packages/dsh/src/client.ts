@@ -1,6 +1,7 @@
 import RushDB from '@rushdb/javascript-sdk'
 import { RushDBAgentMemory, type RushDBMemoryClientOptions } from '@rushdb/agent-memory-contract'
 import { resolveConnection, type Connection, type Credentials, type Settings } from './config.ts'
+import { Transport } from './transport.ts'
 
 export interface RushDBClient {
   db: RushDB
@@ -11,16 +12,19 @@ export interface RushDBClient {
   secrets: string[]
 }
 
-export type CreateClient = (options: RushDBMemoryClientOptions) => Omit<RushDBClient, 'secrets'>
+export type CreateClient = (options: RushDBMemoryClientOptions, transport: Transport) => Omit<RushDBClient, 'secrets'>
 
-export function createClient(options: RushDBMemoryClientOptions): Omit<RushDBClient, 'secrets'> {
+/** The SDK client and contract memory, with every request through `transport`. */
+export function createClient(options: RushDBMemoryClientOptions, transport: Transport): Omit<RushDBClient, 'secrets'> {
+  const { httpClient } = transport
   const db = options.engineUrl
     ? new RushDB(options.engineToken ?? '', {
         direct: true,
         engineUrl: options.engineUrl,
-        ...(options.scope ? { scope: options.scope } : {})
+        ...(options.scope ? { scope: options.scope } : {}),
+        httpClient
       })
-    : new RushDB(options.apiKey ?? '', options.url ? { url: options.url } : undefined)
+    : new RushDB(options.apiKey ?? '', { ...(options.url ? { url: options.url } : {}), httpClient })
   const embedder = options.embedder
   return {
     db,
@@ -37,21 +41,38 @@ export class ClientCache {
   private readonly settings: Settings
   private readonly credentials: Credentials
   private readonly create: CreateClient
+  public readonly transport: Transport
   private current?: { fingerprint: string; client: RushDBClient }
 
-  public constructor(settings: Settings, credentials: Credentials, create: CreateClient = createClient) {
+  public constructor(
+    settings: Settings,
+    credentials: Credentials,
+    create: CreateClient = createClient,
+    transport = new Transport()
+  ) {
     this.settings = settings
     this.credentials = credentials
     this.create = create
+    this.transport = transport
   }
 
   /** Throws `NotConfiguredError` when RushDB isn't configured. */
   public async get(): Promise<RushDBClient> {
-    const connection: Connection = await resolveConnection(this.settings, this.credentials)
+    const connection: Connection = await resolveConnection(this.settings, this.credentials, this.transport.fetch)
     if (this.current?.fingerprint === connection.fingerprint) return this.current.client
-    const client: RushDBClient = { ...this.create(connection.options), secrets: connection.secrets }
+    const client: RushDBClient = { ...this.create(connection.options, this.transport), secrets: connection.secrets }
     this.current = { fingerprint: connection.fingerprint, client }
     return client
+  }
+
+  /** Runs `task` with a deadline and cancellation for every RushDB request it makes. */
+  public run<T>(scope: { signal?: AbortSignal; timeoutMs?: number }, task: () => Promise<T>): Promise<T> {
+    return this.transport.run(scope, task)
+  }
+
+  /** Cancels every open RushDB request; the plugin is unloading. */
+  public close(): void {
+    this.transport.close()
   }
 
   /** Credentials of the current client, to mask in logs. */

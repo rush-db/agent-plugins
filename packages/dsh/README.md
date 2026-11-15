@@ -13,19 +13,21 @@ dsh plugin --profile <profile> add @rushdb/dsh
 Then give it a RushDB API key from [app.rushdb.com](https://app.rushdb.com):
 `export RUSHDB_API_KEY=<key>`, or add `RUSHDB_API_KEY=<key>` to
 `$DSH_HOME/.env`. dsh's credential store works too. The key never goes into
-the plugin's config, which only names it (`apiKeyRef`).
+the plugin's config, which only names it (`apiKeyRef`). As with dsh's own
+keys, a `.env` in the directory you start dsh from is read too, and it wins
+over `$DSH_HOME/.env`: a cloned repository's `.env` can supply the key.
 
 ## Tools
 
 The four tools are always on. They reach the network only when the model calls
 them.
 
-| Tool               | What it does                                                                                                                                                       |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tool               | What it does                                                                                                                                                         |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `rushdb_search`    | Semantic search. With `propertyName`, ranks records by meaning against an embedding index on that property. Without it, searches context stored by earlier sessions. |
-| `rushdb_query`     | Finds records with a RushDB SearchQuery: labels, where filters (related records too), sorting and paging.                                                          |
-| `rushdb_aggregate` | Counts, sums, averages, min and max, collected values and time buckets, optionally grouped.                                                                        |
-| `rushdb_remember`  | Saves a fact, decision or preference so later sessions can find it.                                                                                                |
+| `rushdb_query`     | Finds records with a RushDB SearchQuery: labels, where filters (related records too), sorting and paging.                                                            |
+| `rushdb_aggregate` | Counts, sums, averages, min and max, collected values and time buckets, optionally grouped.                                                                          |
+| `rushdb_remember`  | Saves a fact, decision or preference so later sessions can find it.                                                                                                  |
 
 ## Automatic context
 
@@ -55,6 +57,23 @@ change in that one row.
   plugin waits at most 2 s.
 - Subagent sessions are left out unless `includeSubagents` is on.
 
+### When RushDB is slow or unreachable
+
+Every RushDB request has a deadline, and the plugin cancels what is still open
+when it unloads, so RushDB never holds dsh up:
+
+| Request                              | Deadline                                                     |
+| ------------------------------------ | ------------------------------------------------------------ |
+| Recall before a step                 | `recallTimeoutMs` (1.5 s)                                    |
+| A tool call                          | 30 s, then the call ends with an error result the model sees |
+| Sending a captured turn, index setup | 10 s per request, retried later                              |
+
+A one-shot `dsh headless` run exits within about 5 s of printing its answer
+even when RushDB accepts the connection and never answers: up to 2 s to send
+captured turns, then the outbox's retry back-off and teardown. Turns not sent
+by then stay in the outbox (`$DSH_HOME/rushdb/outbox`) and go out on the next
+run; nothing is lost.
+
 Context is shared per project (a hash of the git remote, or of the working
 directory; `contextScope` replaces it), so Claude Code, Codex, Gemini CLI and
 the other RushDB plugins recall the same project context when they use the
@@ -62,23 +81,23 @@ same RushDB project.
 
 ## Settings
 
-| Setting                | Default            | What it does                                                                            |
-| ---------------------- | ------------------ | --------------------------------------------------------------------------------------- |
-| `apiKeyRef`            | `RUSHDB_API_KEY`   | Credential that holds the RushDB API key.                                               |
-| `url`                  | RushDB Cloud       | RushDB API URL, for a self-hosted RushDB.                                               |
-| `engineUrl`            |                    | A standalone RushDB engine (direct mode) instead of the API.                            |
-| `engineTokenRef`       | `RUSHDB_ENGINE_TOKEN` | Credential that holds the engine token.                                              |
-| `engineScope`          |                    | Tenant on a multitenant engine.                                                         |
-| `embedding`            |                    | `baseUrl`, `apiKeyRef` (`RUSHDB_EMBEDDING_API_KEY`), `model`, `dimensions`: an OpenAI-compatible embedding provider. Required with an engine, which has no managed embeddings. |
-| `autoContext`          | both `false`       | `recall` and `capture`, described above.                                                |
-| `recallLimit`          | `6`                | Most items one recall adds.                                                             |
-| `recallTimeoutMs`      | `1500`             | Recall gives up after this long.                                                        |
-| `recallMinChars`       | `3`                | Shorter prompts don't trigger recall.                                                   |
-| `includeSubagents`     | `false`            | Also recall into and capture from subagent sessions.                                    |
-| `profileId`            | `default`          | Profile id stored with the context.                                                     |
-| `contextScope`         |                    | Replaces the project key.                                                               |
-| `outboxPath`           | `rushdb/outbox`    | Outbox for captured turns; relative to `$DSH_HOME`.                                     |
-| `excludeFromLogUpload` | `false`            | Keep sessions that received RushDB context out of the session-log upload to DeepSeek.  |
+| Setting                | Default               | What it does                                                                                                                                                                   |
+| ---------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `apiKeyRef`            | `RUSHDB_API_KEY`      | Credential that holds the RushDB API key.                                                                                                                                      |
+| `url`                  | RushDB Cloud          | RushDB API URL, for a self-hosted RushDB.                                                                                                                                      |
+| `engineUrl`            |                       | A standalone RushDB engine (direct mode) instead of the API.                                                                                                                   |
+| `engineTokenRef`       | `RUSHDB_ENGINE_TOKEN` | Credential that holds the engine token.                                                                                                                                        |
+| `engineScope`          |                       | Tenant on a multitenant engine.                                                                                                                                                |
+| `embedding`            |                       | `baseUrl`, `apiKeyRef` (`RUSHDB_EMBEDDING_API_KEY`), `model`, `dimensions`: an OpenAI-compatible embedding provider. Required with an engine, which has no managed embeddings. |
+| `autoContext`          | both `false`          | `recall` and `capture`, described above.                                                                                                                                       |
+| `recallLimit`          | `6`                   | Most items one recall adds.                                                                                                                                                    |
+| `recallTimeoutMs`      | `1500`                | Recall gives up after this long.                                                                                                                                               |
+| `recallMinChars`       | `3`                   | Shorter prompts don't trigger recall.                                                                                                                                          |
+| `includeSubagents`     | `false`               | Also recall into and capture from subagent sessions.                                                                                                                           |
+| `profileId`            | `default`             | Profile id stored with the context.                                                                                                                                            |
+| `contextScope`         |                       | Replaces the project key.                                                                                                                                                      |
+| `outboxPath`           | `rushdb/outbox`       | Outbox for captured turns; relative to `$DSH_HOME`.                                                                                                                            |
+| `excludeFromLogUpload` | `false`               | Keep sessions that received RushDB context out of the session-log upload to DeepSeek.                                                                                          |
 
 ## What leaves your machine
 
@@ -99,7 +118,10 @@ same RushDB project.
   by default, and recalled context becomes part of the session. Set
   `excludeFromLogUpload: true` to keep every session that received RushDB
   context out of that upload (dsh can only skip a whole session), or turn the
-  upload off in dsh's settings.
+  upload off in dsh's settings. The plugin reads this from the session's own
+  log, so a session stays out after a resume (also with automatic context
+  turned off since), when it continues under a new agent, and for subagents
+  started from it.
 - **Deleting it**: stored turns and facts are ordinary `EPISODE` and
   `MEMORY_FACT` records in your project; delete them in the RushDB dashboard.
   Turn automatic context off to stop sending.

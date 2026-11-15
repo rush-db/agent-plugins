@@ -88,6 +88,8 @@ export class AutoContext {
   private readonly indexed = new WeakMap<RushDBAgentMemory, Promise<void>>()
   /** Sessions that received recalled context; read by the session-log upload exclusion. */
   public readonly injectedSessions = new Set<string>()
+  /** Cancels a session's open recall requests when its agent or the session goes away. */
+  private readonly sessionAborts = new Map<string, AbortController>()
   private writer?: Promise<DurableEpisodeWriter | null>
 
   public constructor(options: AutoContextOptions) {
@@ -178,8 +180,19 @@ export class AutoContext {
           onError: this.logger.warn
         })
       }
+      // The deadline and cancellation reach the requests themselves, so nothing stays open after the step goes on.
+      const signal = AbortSignal.any([
+        payload.signal,
+        this.sessionAbort(session.id).signal,
+        AbortSignal.timeout(this.settings.recallTimeoutMs)
+      ])
       const text = await untilAborted(
-        withTimeout(recall, this.settings.recallTimeoutMs, this.logger.warn, 'RushDB recall'),
+        withTimeout(
+          () => this.clients.run({ signal, timeoutMs: this.settings.recallTimeoutMs }, recall),
+          this.settings.recallTimeoutMs,
+          this.logger.warn,
+          'RushDB recall'
+        ),
         payload.signal
       )
       if (!text || payload.signal.aborted) return decision
@@ -307,15 +320,35 @@ export class AutoContext {
   }
 
   /** `agent/disposed` and `session/disposed`: forgets the session and flushes in the background. */
+  private sessionAbort(sessionId: string): AbortController {
+    let controller = this.sessionAborts.get(sessionId)
+    if (!controller) {
+      controller = new AbortController()
+      this.sessionAborts.set(sessionId, controller)
+    }
+    return controller
+  }
+
+  /**
+   * `agent/disposed` and `session/disposed`: cancels the session's open recall requests, forgets its turn state and
+   * flushes in the background. `injectedSessions` keeps the id: a session that continues under a new agent stays
+   * excluded from the log upload.
+   */
   public onSessionGone(sessionId: string): void {
+    this.sessionAborts.get(sessionId)?.abort(new Error('RushDB recall cancelled: the session ended'))
+    this.sessionAborts.delete(sessionId)
     this.turns.delete(sessionId)
     this.scopes.delete(sessionId)
-    this.injectedSessions.delete(sessionId)
     void this.flush(DISPOSE_FLUSH_MS)
   }
 
-  /** Plugin unload: a flush bounded by `DISPOSE_FLUSH_MS`, then the writer stops. Never rejects. */
+  /**
+   * Plugin unload: a flush bounded by `DISPOSE_FLUSH_MS`, then the writer stops. Turns not sent by then stay in the
+   * outbox for the next run. The caller then closes the transport, which cancels whatever is still open. Never rejects.
+   */
   public async dispose(): Promise<void> {
+    for (const controller of this.sessionAborts.values()) controller.abort(new Error('RushDB recall cancelled'))
+    this.sessionAborts.clear()
     if (!this.writer) return
     const writer = await withTimeout(this.writer, DISPOSE_FLUSH_MS)
     await writer?.stop(DISPOSE_FLUSH_MS).catch(() => {})

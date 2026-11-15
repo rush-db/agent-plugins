@@ -77,7 +77,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       # Packs @rushdb/dsh and installs it into a scratch DSH_HOME with a pinned dsh: plugin add, --dump-config,
-      # --dump-config-schema, and headless boots that check automatic context off (no requests, no files) and on.
+      # --dump-config-schema, then real headless turns against local RushDB and DeepSeek stand-ins: context off and on,
+      # the log-upload exclusion across a resume, and a RushDB that never answers (bounded exit, outbox kept).
       - name: dsh installs and loads @rushdb/dsh
         run: pnpm --filter @rushdb/dsh smoke
 

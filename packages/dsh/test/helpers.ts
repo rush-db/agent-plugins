@@ -1,8 +1,16 @@
 import { mkdtemp, readdir } from 'node:fs/promises'
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
+import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { RushDBAgentMemory } from '@rushdb/agent-memory-contract'
-import { createUserMessage, type Session, type SessionEvent, type UserMessage } from '../src/host.ts'
+import {
+  createUserMessage,
+  CONTEXT_SOURCE_KIND,
+  type Session,
+  type SessionEvent,
+  type UserMessage
+} from '../src/host.ts'
 import { ClientCache, type CreateClient } from '../src/client.ts'
 import { resolveSettings, type Config, type Credentials, type Settings } from '../src/config.ts'
 
@@ -103,5 +111,69 @@ export async function until(check: () => boolean | Promise<boolean>, timeoutMs =
   while (!(await check())) {
     if (Date.now() > deadline) throw new Error('condition not met in time')
     await new Promise((resolve) => setTimeout(resolve, 20))
+  }
+}
+
+/** A user message carrying recalled RushDB context, as the pre-step inserts it. */
+export function contextMessage(text = 'Context recalled from RushDB (historical, may be outdated).'): UserMessage {
+  return createUserMessage({ content: [{ type: 'text', text }], source: { kind: CONTEXT_SOURCE_KIND, form: 'recall' } })
+}
+
+export interface StandInRequest {
+  method: string
+  path: string
+  body: string
+  /** The client dropped the connection before an answer. */
+  abandoned: boolean
+}
+
+export interface StandInRushDB {
+  url: string
+  requests: StandInRequest[]
+  /** Requests whose connection is still open, waiting for an answer that never comes. */
+  open(): number
+  close(): Promise<void>
+}
+
+/**
+ * A local RushDB API stand-in. `ok` answers every request (recall searches with `searchHits`); `hang` accepts the
+ * connection, reads the request and never answers.
+ */
+export async function standInRushDB(
+  mode: 'ok' | 'hang',
+  options: { searchHits?: Array<Record<string, unknown>> } = {}
+): Promise<StandInRushDB> {
+  const requests: StandInRequest[] = []
+  const pending = new Set<ServerResponse>()
+  const server = createServer((request: IncomingMessage, response: ServerResponse) => {
+    let body = ''
+    request.on('data', (chunk) => (body += chunk))
+    request.on('end', () => {
+      const entry: StandInRequest = { method: request.method ?? '', path: request.url ?? '', body, abandoned: false }
+      requests.push(entry)
+      if (mode === 'hang') {
+        pending.add(response)
+        response.on('close', () => {
+          entry.abandoned = !response.writableEnded
+          pending.delete(response)
+        })
+        return
+      }
+      const hits = entry.path.endsWith('/ai/search') ? (options.searchHits ?? []) : []
+      response.writeHead(200, { 'content-type': 'application/json' })
+      response.end(JSON.stringify({ success: true, data: hits, total: hits.length }))
+    })
+  })
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const { port } = server.address() as AddressInfo
+  return {
+    url: `http://127.0.0.1:${port}/api/v1`,
+    requests,
+    open: () => pending.size,
+    close: () =>
+      new Promise((resolve) => {
+        server.closeAllConnections()
+        server.close(() => resolve())
+      })
   }
 }

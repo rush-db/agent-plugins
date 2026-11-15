@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { AgentMemoryEpisodeV1 } from '@rushdb/agent-memory-contract'
 import { RECALL_HEADING, silentLogger } from '@rushdb/agent-plugins-core'
-import { AutoContext, DISPOSE_FLUSH_MS } from '../src/context.ts'
+import { AutoContext, COMPACTION_FLUSH_MS, DISPOSE_FLUSH_MS } from '../src/context.ts'
 import { CONTEXT_SOURCE_KIND, type PreStepDecision } from '../src/host.ts'
 import {
   clientsFor,
@@ -228,5 +228,16 @@ describe('session/event capture', () => {
     await auto.dispose()
     expect(persistEpisode).not.toHaveBeenCalled()
     expect(await filesUnder(home)).toEqual([])
+  })
+})
+
+describe('compaction', () => {
+  it('flushes the outbox in the background when compaction starts', async () => {
+    const { auto } = await autoContext({ autoContext: { capture: true } }, memoryStub())
+    const flush = vi.spyOn(auto, 'flush').mockResolvedValue(true)
+    expect(() =>
+      auto.onSessionEvent(session('s'), { type: 'compaction/start', data: { compactionId: 'c1', turn: 2 } } as never)
+    ).not.toThrow()
+    expect(flush).toHaveBeenCalledWith(COMPACTION_FLUSH_MS)
   })
 })

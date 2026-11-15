@@ -4,7 +4,7 @@ import type { ClientCache, RushDBClient } from './client.ts'
 import type { Settings } from './config.ts'
 import { defineTool, type Agent } from './host.ts'
 
-/** Tool calls give up after this long; dsh's timeout policy aborts the signal. */
+/** Deadline of a tool call and of each RushDB request in it; dsh's timeout policy also aborts the signal. */
 export const TOOL_TIMEOUT_MS = 30_000
 /** Longest tool output the model gets, in characters. */
 export const TOOL_OUTPUT_MAX_CHARS = 30_000
@@ -253,5 +253,11 @@ export function createTools(dependencies: ToolDependencies) {
     }
   })
 
-  return [search, query, aggregate, remember]
+  // Each call's requests carry its deadline and cancellation, so a RushDB that never answers ends the call with an
+  // error result and leaves no request open.
+  return [search, query, aggregate, remember].map((tool): typeof tool => ({
+    ...tool,
+    execute: (args, exec) =>
+      dependencies.clients.run({ signal: exec.signal, timeoutMs: TOOL_TIMEOUT_MS }, () => tool.execute(args, exec))
+  }))
 }

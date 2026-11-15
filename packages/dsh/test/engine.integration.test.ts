@@ -42,7 +42,7 @@ async function setup() {
   const clients = new ClientCache(
     settings,
     credentials({ RUSHDB_ENGINE_TOKEN: engineToken!, RUSHDB_EMBEDDING_API_KEY: 'unused' }),
-    (options) => createClient({ ...options, embedder })
+    (options, transport) => createClient({ ...options, embedder }, transport)
   )
   return { settings, clients }
 }
@@ -79,7 +79,7 @@ describe.skipIf(!engineUrl || !engineToken)('local engine', () => {
       clients: new ClientCache(
         settings,
         credentials({ RUSHDB_ENGINE_TOKEN: engineToken!, RUSHDB_EMBEDDING_API_KEY: 'unused' }),
-        (options) => createClient({ ...options, embedder: hashingEmbedder() })
+        (options, transport) => createClient({ ...options, embedder: hashingEmbedder() }, transport)
       ),
       logger: silentLogger,
       gitRemote: async () => undefined

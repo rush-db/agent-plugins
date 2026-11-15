@@ -192,7 +192,12 @@ export interface Connection {
  * The RushDB connection from the settings and the current credential values, resolved on every call so a rotated
  * key applies to the next request. Throws `NotConfiguredError` when something is missing.
  */
-export async function resolveConnection(settings: Settings, credentials: Credentials): Promise<Connection> {
+export async function resolveConnection(
+  settings: Settings,
+  credentials: Credentials,
+  /** Fetch for the embedding provider; the plugin passes its transport's, which has deadlines. */
+  fetch?: typeof globalThis.fetch
+): Promise<Connection> {
   let embedder: RushDBMemoryClientOptions['embedder']
   const secrets: string[] = []
   if (settings.embedding) {
@@ -204,7 +209,7 @@ export async function resolveConnection(settings: Settings, credentials: Credent
       )
     }
     secrets.push(apiKey)
-    embedder = createOpenAICompatibleEmbedder({ baseUrl, apiKey, model, dimensions })
+    embedder = createOpenAICompatibleEmbedder({ baseUrl, apiKey, model, dimensions, ...(fetch ? { fetch } : {}) })
   }
   if (settings.engineUrl) {
     const engineToken = await secret(credentials, settings.engineTokenRef)
