@@ -79,9 +79,9 @@ Owner fills in the company fields.
 
 - OAuth 2.0. The server returns `401` with a `WWW-Authenticate` header pointing
   to `https://mcp.rushdb.com/.well-known/oauth-protected-resource`, which names
-  the authorization server and the scopes `records:read` and `records:write`.
-- Read tools need `records:read`; write and destructive tools need
-  `records:write`.
+  the authorization server.
+- Scopes: `records:read` and `records:write`. Read tools need
+  `records:read`; write and destructive tools need `records:write`.
 - Confirm the client registration method the portal asks for (dynamic
   registration or a client entered in the portal) with the platform owner before
   filling this step.
@@ -154,17 +154,26 @@ from `shared/listing.json`.
   Only when the user turns automatic context on. Then the hooks send to the
   RushDB API URL the user configured (`https://api.rushdb.com/api/v1` by
   default), never anywhere else:
-  - `recall`: at session start, a fixed recall question, a project scope (a hash
-    of the git remote or working directory) and the session id;
+  - `recall`: at session start, resume, `/clear` and after compaction, two
+    search requests (earlier turns and facts) with a fixed recall question, a
+    project scope (a hash of the git remote or working directory) and the
+    session id;
   - `recall+persist`: also each finished turn (the latest user message and the
-    assistant's reply, each cut to a bounded length) and the compaction summary.
+    assistant's reply, each cut to a bounded length, a summary of the two, the
+    host and hook name, a timestamp and the turn number) and the compaction
+    summary, stored as records labelled `EPISODE`. The first delivery creates
+    two vector indexes in the user's project, `EPISODE.summary` and
+    `MEMORY_FACT.text`, if they are missing.
 - **Personal data**: session text can contain whatever the user typed. It is
   stored only in the user's own RushDB project.
 - **Retention and deletion**: as for the connector: stored until the user
-  deletes the records or the project. Setting `auto_context` to `off` stops all
+  deletes the `EPISODE` records (and, if wanted, the two indexes) or the
+  project. Setting `auto_context` to `off` stops all
   sending at once.
-- **Local files**: an outbox of turns not yet delivered and a `hooks.log` with
-  keys masked, in the plugin data directory.
+- **Local files**: with `recall+persist`, an outbox of turns not yet delivered
+  and a turn counter per session (`sessions/`), named by a hash of the session
+  id; and a `hooks.log` with keys masked. All in the plugin data directory.
+  With automatic context `off`, the hooks write no files.
 - **Under 18**: not directed at children.
 
 ### Reviewer holds (accepted, decision D3)
