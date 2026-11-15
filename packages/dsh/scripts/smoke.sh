@@ -8,7 +8,8 @@
 #      (and, as a control, does upload it with the option off);
 #   6. a RushDB that accepts the connection and never answers, and one at an address that drops packets: dsh exits
 #      within ANSWER_EXIT_BOUND_S of the answer, a tool call ends with an error result, and the captured turns wait in
-#      the outbox until the next run sends them.
+#      the outbox until the next run sends them;
+#   8. behind dsh's HTTP proxy (HTTP_PROXY/HTTPS_PROXY), RushDB is reached through the proxy.
 # Real `dsh headless` turns run to the end against local stand-ins for RushDB and the DeepSeek API
 # (scripts/stand-ins.mjs) on 127.0.0.1; no RushDB service and no DeepSeek key are used.
 #   DSH_VERSION  dsh to install (default 0.2.2-rc.3)
@@ -68,9 +69,10 @@ echo "smoke: --dump-config-schema carries the rushdb Config"
 # Stand-ins for RushDB and the DeepSeek API.
 node "$package_dir/scripts/stand-ins.mjs" "$scratch" &
 server_pid=$!
-for _ in $(seq 50); do [[ -s "$scratch/rushdb.port" && -s "$scratch/model.port" ]] && break; sleep 0.1; done
+for _ in $(seq 50); do [[ -s "$scratch/rushdb.port" && -s "$scratch/model.port" && -s "$scratch/proxy.port" ]] && break; sleep 0.1; done
 rushdb_url="http://127.0.0.1:$(cat "$scratch/rushdb.port")/api/v1"
 model_url="http://127.0.0.1:$(cat "$scratch/model.port")"
+proxy_url="http://127.0.0.1:$(cat "$scratch/proxy.port")"
 
 # The bound documented in the README: after the answer, at most about 5 s (a 2 s flush of captured turns, the outbox's
 # retry back-off, teardown). The check allows some slack for a slow CI runner.
@@ -88,7 +90,10 @@ boot() {
     >"$scratch/patch.yml"
   : >"$scratch/rushdb.log"
   : >"$scratch/model.log"
-  (cd "$scratch/work" && RUSHDB_API_KEY=smoke-key-not-real DEEPSEEK_API_KEY=smoke-model-key \
+  : >"$scratch/proxy.log"
+  local proxy_env=()
+  [[ -z "${proxy:-}" ]] || proxy_env=("HTTP_PROXY=$proxy" "HTTPS_PROXY=$proxy")
+  (cd "$scratch/work" && env "${proxy_env[@]}" RUSHDB_API_KEY=smoke-key-not-real DEEPSEEK_API_KEY=smoke-model-key \
     DEEPSEEK_BASE_URL="$model_url" node -e '
       const { spawn } = require("node:child_process")
       const fs = require("node:fs")
@@ -164,5 +169,17 @@ boot ok '    autoContext: { capture: true }' "And which test runner does it use?
 (($(grep -c "POST /api/v1/records$" "$scratch/rushdb.log") >= 3)) ||
   fail "the waiting turns were not sent: $(cat "$scratch/rushdb.log")"
 echo "smoke: the next run sent the waiting turns; the outbox is empty"
+
+# 8. Behind dsh's HTTP proxy: RushDB at a host only the proxy reaches (the model stays direct: dsh never proxies
+# loopback).
+proxy="$proxy_url" url="http://rushdb.smoke-proxy.invalid/api/v1" \
+  boot hit '    autoContext: { recall: true, capture: true }' "Which package manager does this project use?"
+grep -q "POST http://rushdb.smoke-proxy.invalid/api/v1/ai/search" "$scratch/proxy.log" ||
+  fail "recall did not go through the proxy: $(cat "$scratch/proxy.log" "$scratch/boot.err")"
+grep -q "POST http://rushdb.smoke-proxy.invalid/api/v1/records$" "$scratch/proxy.log" ||
+  fail "capture did not go through the proxy: $(cat "$scratch/proxy.log")"
+grep -q "POST /api/v1/ai/search" "$scratch/rushdb.log" || fail "the proxy did not reach RushDB"
+[[ "$(outbox_count)" == 0 ]] || fail "turns were left in the outbox behind the proxy"
+echo "smoke: behind HTTP_PROXY: recall and capture went through the proxy ($(wc -l <"$scratch/proxy.log") requests)"
 
 echo "smoke: OK"

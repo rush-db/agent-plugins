@@ -1,5 +1,5 @@
 import { mkdtemp, readdir } from 'node:fs/promises'
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
+import { createServer, request as httpRequest, type IncomingMessage, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -173,6 +173,68 @@ export async function standInRushDB(
     close: () =>
       new Promise((resolve) => {
         server.closeAllConnections()
+        server.close(() => resolve())
+      })
+  }
+}
+
+export interface FakeProxy {
+  url: string
+  /** `METHOD absolute-url` for forwarded requests, `CONNECT host:port` for tunnels. */
+  requests: string[]
+  /** Client connections still open. */
+  open(): number
+  close(): Promise<void>
+}
+
+/**
+ * A local HTTP proxy that records what goes through it. Forwarded requests (`GET http://host/...`) all go to
+ * `upstream`, whatever host they name, so a hostname nothing else resolves reaches a local stand-in. CONNECT requests
+ * are recorded and never answered.
+ */
+export async function fakeProxy(upstream: string): Promise<FakeProxy> {
+  const requests: string[] = []
+  const sockets = new Set<import('node:net').Socket>()
+  const target = new URL(upstream)
+  const server = createServer((request, response) => {
+    requests.push(`${request.method} ${request.url}`)
+    const url = new URL(request.url ?? '/')
+    const forwarded = httpRequest(
+      {
+        host: target.hostname,
+        port: target.port,
+        method: request.method,
+        path: url.pathname + url.search,
+        headers: request.headers
+      },
+      (answer) => {
+        response.writeHead(answer.statusCode ?? 502, answer.headers)
+        answer.pipe(response)
+      }
+    )
+    forwarded.on('error', () => response.destroy())
+    response.on('close', () => forwarded.destroy())
+    request.pipe(forwarded)
+  })
+  server.on('connection', (socket) => {
+    sockets.add(socket)
+    socket.on('close', () => sockets.delete(socket))
+  })
+  server.on('connect', (request, socket) => {
+    requests.push(`CONNECT ${request.url}`)
+    // The server hands the socket over half-open; close this side when the client ends its own.
+    socket.on('end', () => socket.destroy())
+    socket.on('error', () => socket.destroy())
+  })
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const { port } = server.address() as AddressInfo
+  return {
+    url: `http://127.0.0.1:${port}`,
+    requests,
+    open: () => sockets.size,
+    close: () =>
+      new Promise((resolve) => {
+        for (const socket of sockets) socket.destroy()
         server.close(() => resolve())
       })
   }

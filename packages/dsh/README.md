@@ -59,6 +59,9 @@ change in that one row.
 
 ### When RushDB is slow or unreachable
 
+RushDB requests follow dsh's proxy settings (`HTTP_PROXY`, `HTTPS_PROXY`,
+`ALL_PROXY`, `NO_PROXY`), the same way dsh's own requests do.
+
 Every RushDB request has a deadline, and the plugin cancels what is still open
 when it unloads, so RushDB never holds dsh up:
 

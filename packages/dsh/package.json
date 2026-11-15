@@ -66,11 +66,12 @@
   "dependencies": {
     "@rushdb/agent-memory-contract": "^0.3.1",
     "@rushdb/javascript-sdk": "^3.4.0",
-    "undici": "^7.16.0"
+    "undici": "^8.11.2"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "~4.1.0",
     "@deepseek-ai/dsh-credentials": ">=0.2.2-0 <0.3.0",
+    "@deepseek-ai/dsh-http-proxy": ">=0.2.2-0 <0.3.0",
     "@deepseek-ai/dsh-launch-environment": ">=0.2.2-0 <0.3.0",
     "@deepseek-ai/dsh-llm": ">=0.2.2-0 <0.3.0",
     "@deepseek-ai/dsh-tools": ">=0.2.2-0 <0.3.0",
@@ -81,6 +82,7 @@
     "@deepseek-ai/dsh-agent": "0.2.2-rc.3",
     "@deepseek-ai/dsh-compaction": "0.2.2-rc.3",
     "@deepseek-ai/dsh-credentials": "0.2.2-rc.3",
+    "@deepseek-ai/dsh-http-proxy": "0.2.2-rc.3",
     "@deepseek-ai/dsh-launch-environment": "0.2.2-rc.3",
     "@deepseek-ai/dsh-llm": "0.2.2-rc.3",
     "@deepseek-ai/dsh-plugin-market-index": "0.2.2-rc.3",

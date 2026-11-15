@@ -4,17 +4,25 @@
  * connection and never answers holds headless dsh open after the answer until the SDK's own 80 s timeout, or longer
  * when the network drops packets.
  *
- * Requests use undici's own `fetch` and `Agent`s, one per deadline, whose connect timeout is that deadline: an aborted
- * request alone doesn't end a TCP connect still in progress, and Node's default connect timeout is 10 s. The sockets
- * the agents open are tracked, and `close()` destroys them, so a connect to an address that drops packets can't keep
- * the process alive after unload.
+ * Requests use undici's own `fetch` with dispatchers of their own, one per deadline, whose connect timeout is that
+ * deadline: an aborted request alone doesn't end a TCP connect still in progress, and Node's default connect timeout is
+ * 10 s. The sockets they open are tracked, and `close()` destroys them, so a connect to an address that drops packets
+ * can't keep the process alive after unload.
+ *
+ * Own dispatchers would bypass dsh's HTTP proxy, which dsh installs as undici's global dispatcher. So each request asks
+ * dsh's policy (`proxyRouteFor`, which applies HTTP(S)_PROXY, ALL_PROXY and NO_PROXY as dsh resolved them at launch)
+ * how to go: through a `ProxyAgent` to the proxy it names, built the way dsh builds its own, or direct. Both kinds get
+ * the deadline as connect timeout and have their sockets tracked; dsh's own global dispatcher is never touched.
  *
  * Patterned on packages/pi/src/transport.ts (branch feat/p2-pi); kept inside this package until both are unified.
  */
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type { Socket } from 'node:net'
 import type RushDB from '@rushdb/javascript-sdk'
-import { Agent, buildConnector, fetch as undiciFetch } from 'undici'
+import { proxyRouteFor } from '@deepseek-ai/dsh-http-proxy'
+import { Agent, buildConnector, Client, Pool, ProxyAgent, fetch as undiciFetch, type Dispatcher } from 'undici'
+
+type Connector = buildConnector.connector
 
 type SDKOptions = NonNullable<ConstructorParameters<typeof RushDB>[1]>
 export type HttpClient = NonNullable<SDKOptions['httpClient']>
@@ -43,35 +51,67 @@ function requestBody(config: RequestConfig): BodyInit | undefined {
   return requestData === undefined ? undefined : JSON.stringify(requestData)
 }
 
+function requestUrl(input: Parameters<typeof fetch>[0]): URL {
+  if (input instanceof URL) return input
+  return new URL(typeof input === 'string' ? input : input.url)
+}
+
 export class Transport {
   private readonly closer = new AbortController()
   private readonly scopes = new AsyncLocalStorage<RequestScope>()
   private readonly defaultTimeoutMs: number
-  /** One agent per deadline, so each request's connect timeout is its own deadline. */
-  private readonly agents = new Map<number, Agent>()
+  /** One dispatcher per route and deadline, so each request's connect timeout is its own deadline. */
+  private readonly agents = new Map<string, Dispatcher>()
   private readonly sockets = new Set<Socket>()
 
   public constructor(options: { timeoutMs?: number } = {}) {
     this.defaultTimeoutMs = options.timeoutMs ?? REQUEST_TIMEOUT_MS
   }
 
-  private dispatcher(timeoutMs: number): Agent {
-    let agent = this.agents.get(timeoutMs)
-    if (!agent) {
-      const connect = buildConnector({ timeout: timeoutMs })
-      agent = new Agent({
-        connect: (options, callback) => {
-          // undici's connector returns the socket it is connecting, though its types say void.
-          const socket = connect(options, callback) as unknown as Socket | undefined
-          if (socket) {
-            this.sockets.add(socket)
-            socket.once('close', () => this.sockets.delete(socket))
-          }
-          return socket
+  /** `connect` with every socket it opens tracked, so `close()` can destroy one still connecting. */
+  private tracked(connect: Connector): Connector {
+    return ((options, callback) => {
+      // undici's connector returns the socket it is connecting, though its types say void. The tunnel connector of a
+      // ProxyAgent returns a promise instead; its socket comes from the proxy client's connector, tracked there.
+      const socket = connect(options, callback) as unknown
+      if (socket && typeof (socket as Socket).destroy === 'function' && typeof (socket as Socket).once === 'function') {
+        const tracked = socket as Socket
+        this.sockets.add(tracked)
+        tracked.once('close', () => this.sockets.delete(tracked))
+      }
+      return socket
+    }) as Connector
+  }
+
+  private dispatcher(url: URL, timeoutMs: number): Dispatcher {
+    const route = proxyRouteFor(url)
+    const key = route.proxied ? `${timeoutMs} ${route.proxy}` : String(timeoutMs)
+    let agent = this.agents.get(key)
+    if (agent) return agent
+    if (route.proxied) {
+      // The same ProxyAgent dsh's own policy dispatcher builds, with the deadline as connect timeout (to the proxy,
+      // and to RushDB through a tunnel) and both connectors tracked.
+      const pool =
+        (extra: Pool.Options = {}) =>
+        (origin: string | URL, options: object): Dispatcher => {
+          const passed = { ...(options as Pool.Options), ...extra }
+          const connect = typeof passed.connect === 'function' ? this.tracked(passed.connect) : passed.connect
+          return passed.connections === 1
+            ? new Client(origin, { ...passed, connect })
+            : new Pool(origin, { ...passed, connect })
         }
+      agent = new ProxyAgent({
+        uri: route.proxy,
+        connectTimeout: timeoutMs,
+        // The proxy client sends the tunnel's CONNECT without the request's signal; the deadline as headers timeout
+        // ends a CONNECT the proxy never answers instead of undici's 300 s default.
+        clientFactory: pool({ headersTimeout: timeoutMs }) as ProxyAgent.Options['clientFactory'],
+        factory: pool()
       })
-      this.agents.set(timeoutMs, agent)
+    } else {
+      agent = new Agent({ connect: this.tracked(buildConnector({ timeout: timeoutMs })) })
     }
+    this.agents.set(key, agent)
     return agent
   }
 
@@ -101,7 +141,7 @@ export class Transport {
       const response = await undiciFetch(input as Parameters<typeof undiciFetch>[0], {
         ...(init as Parameters<typeof undiciFetch>[1]),
         signal: AbortSignal.any(signals),
-        dispatcher: this.dispatcher(timeoutMs)
+        dispatcher: this.dispatcher(requestUrl(input), timeoutMs)
       })
       return response as unknown as Response
     } catch (error) {

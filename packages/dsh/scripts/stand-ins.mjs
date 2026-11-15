@@ -1,7 +1,7 @@
 // Local stand-ins for scripts/smoke.sh: a RushDB API and a DeepSeek Messages API, so real `dsh headless` turns run
 // to the end without RushDB Cloud or a DeepSeek key. Both listen on 127.0.0.1 only.
 //   node stand-ins.mjs <dir>
-// Writes <dir>/rushdb.port and <dir>/model.port, then serves until killed.
+// Writes <dir>/rushdb.port, <dir>/model.port and <dir>/proxy.port, then serves until killed.
 //
 // RushDB: reads <dir>/rushdb.mode on every request:
 //   ok    answers every request (recall searches with nothing)
@@ -12,8 +12,11 @@
 // DeepSeek: answers each turn with a short text. A prompt containing CALL_RUSHDB_QUERY first gets a rushdb_query tool
 // call. Each request is appended to <dir>/model.log as JSON: whether it carries the dsh_session_log upload, whether
 // that upload contains recalled RushDB context, and whether it carries a failed tool result.
+//
+// Proxy: a forward HTTP proxy that appends `METHOD absolute-url` to <dir>/proxy.log and sends every request to the
+// RushDB stand-in, whatever host it names, so a hostname nothing else resolves is reachable only through it.
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
-import { createServer } from 'node:http'
+import { createServer, request as httpRequest } from 'node:http'
 import { join } from 'node:path'
 
 const dir = process.argv[2]
@@ -124,4 +127,28 @@ listen(
     }
   }),
   'model'
+)
+
+listen(
+  createServer((request, response) => {
+    appendFileSync(join(dir, 'proxy.log'), `${request.method} ${request.url}\n`)
+    const url = new URL(request.url)
+    const forwarded = httpRequest(
+      {
+        host: '127.0.0.1',
+        port: Number(readFileSync(join(dir, 'rushdb.port'), 'utf8')),
+        method: request.method,
+        path: url.pathname + url.search,
+        headers: request.headers
+      },
+      (answer) => {
+        response.writeHead(answer.statusCode ?? 502, answer.headers)
+        answer.pipe(response)
+      }
+    )
+    forwarded.on('error', () => response.destroy())
+    response.on('close', () => forwarded.destroy())
+    request.pipe(forwarded)
+  }),
+  'proxy'
 )
