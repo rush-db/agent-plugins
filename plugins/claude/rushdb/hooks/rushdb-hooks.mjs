@@ -2298,13 +2298,17 @@ async function recallContext(memory, scope, options = {}) {
 }
 
 // packages/hooks/src/hosts.ts
-var HOSTS = ["claude", "qwen", "codex", "gemini"];
+var HOSTS = ["claude", "qwen", "codex", "gemini", "agy"];
 var COMMANDS = ["recall", "capture", "precompact", "postcompact", "end", "flush"];
 function text(value) {
   return typeof value === "string" && value.trim() ? value : void 0;
 }
+function stripHookContext(prompt) {
+  return text(prompt?.replace(/<hook_context>[\s\S]*?<\/hook_context>\s*/g, ""));
+}
 function normalizeInput(host, command, raw, env) {
   const input = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  if (host === "agy") return normalizeAgyInput(command, input);
   const sessionEnv = host === "gemini" ? env.GEMINI_SESSION_ID : host === "qwen" ? env.QWEN_CODE_SESSION_ID : void 0;
   const cwdEnv = host === "gemini" ? env.GEMINI_CWD ?? env.GEMINI_PROJECT_DIR : host === "qwen" ? env.QWEN_PROJECT_DIR ?? env.CLAUDE_PROJECT_DIR : env.CLAUDE_PROJECT_DIR;
   return {
@@ -2314,13 +2318,31 @@ function normalizeInput(host, command, raw, env) {
     sessionId: text(input.session_id)?.trim() ?? text(sessionEnv)?.trim(),
     cwd: text(input.cwd) ?? text(cwdEnv) ?? process.cwd(),
     transcriptPath: text(input.transcript_path),
-    prompt: text(input.prompt),
+    prompt: host === "gemini" ? stripHookContext(text(input.prompt)) : text(input.prompt),
     assistantText: text(input.last_assistant_message) ?? text(input.prompt_response),
     compactSummary: text(input.compact_summary),
     turnId: text(input.turn_id)
   };
 }
+function normalizeAgyInput(command, input) {
+  const workspaces = Array.isArray(input.workspacePaths) ? input.workspacePaths : [];
+  return {
+    host: "agy",
+    command,
+    eventName: text(input.hookEventName) ?? "",
+    sessionId: text(input.conversationId)?.trim(),
+    cwd: text(input.cwd) ?? text(workspaces[0]) ?? process.cwd(),
+    transcriptPath: text(input.transcriptPath),
+    prompt: text(input.lastUserInput)
+  };
+}
 function formatOutput(event, context = "") {
+  if (event.host === "agy") {
+    if (event.command === "recall" && context) {
+      return JSON.stringify({ injectSteps: [{ systemMessage: { systemMessage: context } }] });
+    }
+    return "{}";
+  }
   if (event.host === "gemini") {
     if (event.command === "recall" && context) {
       return JSON.stringify({
@@ -2512,6 +2534,10 @@ async function runEnabled(event, config, logger, options) {
     }
     case "precompact": {
       if (!persist) return empty;
+      if (event.host === "gemini") {
+        if (await pendingEpisodeCount(outbox) > 0) spawnFlush();
+        return empty;
+      }
       await flushOutbox(outbox, { memory: memory(), logger, timeoutMs: PRECOMPACT_FLUSH_MS });
       return empty;
     }

@@ -1,0 +1,8 @@
+description = "Find earlier decisions, tasks and records in RushDB about a topic"
+prompt = """
+Search the user's RushDB project for earlier work about: {{args}}
+
+1. Call `getSchemaMarkdown` if you have not done so in this session.
+2. Search the records that match the topic, such as `DECISION`, `TASK`, `ENTITY`, `PREFERENCE` and `SESSION`, and any domain labels the schema shows. Follow the `rushdb-query-builder` skill for the query syntax. Leave `EPISODE` and `MEMORY_FACT` records to the automatic context hooks: the `rushdb-agent-memory` skill forbids querying them without trusted scope fields.
+3. Answer with what you found, newest first, and say when each item was recorded. Treat old items as possibly outdated, and say so when nothing relevant was found.
+"""

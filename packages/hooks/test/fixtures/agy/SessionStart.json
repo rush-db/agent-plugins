@@ -1,0 +1,8 @@
+{
+  "conversationId": "agy-session",
+  "workspacePaths": ["CWD"],
+  "transcriptPath": "TRANSCRIPT",
+  "modelName": "auto",
+  "hookEventName": "SessionStart",
+  "cwd": "CWD"
+}

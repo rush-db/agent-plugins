@@ -125,6 +125,12 @@ async function runEnabled(event: HookEvent, config: EnabledConfig, logger: Logge
 
     case 'precompact': {
       if (!persist) return empty
+      // Gemini CLI (0.68.0) fires PreCompress before every turn, ahead of its own threshold check, and waits for it:
+      // a synchronous flush would hold each turn, for up to 20 s while RushDB is unreachable.
+      if (event.host === 'gemini') {
+        if ((await pendingEpisodeCount(outbox)) > 0) spawnFlush()
+        return empty
+      }
       await flushOutbox(outbox, { memory: memory(), logger, timeoutMs: PRECOMPACT_FLUSH_MS })
       return empty
     }

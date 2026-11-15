@@ -73,7 +73,9 @@ describe('golden: stdout per host and event', () => {
     ],
     ['gemini', 'AfterAgent', 'capture', '{}'],
     ['gemini', 'PreCompress', 'precompact', '{}'],
-    ['gemini', 'SessionEnd', 'end', '{}']
+    ['gemini', 'SessionEnd', 'end', '{}'],
+    ['agy', 'SessionStart', 'recall', JSON.stringify({ injectSteps: [{ systemMessage: { systemMessage: plain } }] })],
+    ['agy', 'Stop', 'capture', '{}']
   ]
 
   for (const [host, event, command, expected] of cases) {
@@ -85,7 +87,7 @@ describe('golden: stdout per host and event', () => {
   it('prints the same empty answers with automatic context off, and touches nothing', async () => {
     for (const [host, event, command, expected] of cases) {
       const output = await run(host, event, command, { RUSHDB_AUTO_CONTEXT: 'off' })
-      expect(output).toBe(command === 'recall' ? (host === 'gemini' ? '{}' : '') : expected)
+      expect(output).toBe(command === 'recall' ? (host === 'gemini' || host === 'agy' ? '{}' : '') : expected)
     }
     expect(memory.recall).not.toHaveBeenCalled()
     expect(spawnFlush).not.toHaveBeenCalled()
@@ -106,6 +108,20 @@ describe('recall', () => {
     memory.recall.mockResolvedValue([])
     expect(await run('claude', 'SessionStart', 'recall')).toBe('')
     expect(await run('gemini', 'SessionStart', 'recall')).toBe('{}')
+    expect(await run('agy', 'SessionStart', 'recall')).toBe('{}')
+  })
+
+  it('agy: session from conversationId, project from cwd, then the first workspace path', async () => {
+    await run('agy', 'SessionStart', 'recall')
+    expect(memory.recall.mock.calls[0]![0]).toMatchObject({
+      excludeSessionId: 'agy-session',
+      agentId: 'agent-plugins'
+    })
+    const input = await fixture('agy', 'SessionStart', { cwd: home })
+    delete input.cwd
+    const gitRemote = vi.fn(async () => undefined)
+    await runHook('recall', 'agy', input, { ...options(), gitRemote })
+    expect(gitRemote).toHaveBeenCalledWith(home)
   })
 
   it('works in recall-only mode, which captures nothing', async () => {
@@ -172,6 +188,21 @@ describe('capture', () => {
     })
   })
 
+  it('Gemini: recalled <hook_context> in front of the prompt is not stored again', async () => {
+    const input = await fixture('gemini', 'AfterAgent', { cwd: home })
+    input.prompt = `<hook_context>Context recalled from RushDB: &lt;old&gt;</hook_context>\n\n${input.prompt as string}`
+    await runHook('capture', 'gemini', input, options())
+    const [episode] = await outbox()
+    expect(JSON.stringify(episode)).not.toContain('hook_context')
+    expect(JSON.stringify(episode)).toContain('Which package manager do we use?')
+  })
+
+  it('agy: Stop has no answer text, so it is skipped and logged', async () => {
+    await run('agy', 'Stop', 'capture')
+    expect(await outbox()).toEqual([])
+    expect(await readFile(join(stateDir(), 'hooks.log'), 'utf8')).toMatch(/capture skipped a agy Stop/)
+  })
+
   it('a Stop that fires twice for one turn stores one episode', async () => {
     await run('claude', 'Stop', 'capture')
     await run('claude', 'Stop', 'capture')
@@ -194,6 +225,16 @@ describe('precompact, end and flush', () => {
     await run('claude', 'PreCompact', 'precompact')
     expect(memory.persistEpisode).toHaveBeenCalledTimes(1)
     expect(await outbox()).toEqual([])
+  })
+
+  it('Gemini precompact hands the outbox to a background flush instead of waiting', async () => {
+    expect(await run('gemini', 'PreCompress', 'precompact')).toBe('{}')
+    expect(spawnFlush).not.toHaveBeenCalled()
+    await run('gemini', 'AfterAgent', 'capture')
+    spawnFlush.mockClear()
+    expect(await run('gemini', 'PreCompress', 'precompact')).toBe('{}')
+    expect(spawnFlush).toHaveBeenCalledTimes(1)
+    expect(memory.persistEpisode).not.toHaveBeenCalled()
   })
 
   it('end spawns a flush only when something is waiting', async () => {

@@ -1,0 +1,11 @@
+{
+  "rushdb-context": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "node ./hooks/rushdb-hooks.mjs recall --host agy",
+        "timeout": 10
+      }
+    ]
+  }
+}
