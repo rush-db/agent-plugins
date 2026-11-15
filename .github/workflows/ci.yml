@@ -64,6 +64,23 @@ jobs:
         continue-on-error: true
         run: $CLAUDE plugin validate --strict --profile directory ./plugins/claude/rushdb
 
+  dsh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.1.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Packs @rushdb/dsh and installs it into a scratch DSH_HOME with a pinned dsh: plugin add, --dump-config,
+      # --dump-config-schema, and headless boots that check automatic context off (no requests, no files) and on.
+      - name: dsh installs and loads @rushdb/dsh
+        run: pnpm --filter @rushdb/dsh smoke
+
   links:
     runs-on: ubuntu-latest
     steps:

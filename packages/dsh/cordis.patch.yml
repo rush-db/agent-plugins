@@ -1,0 +1,9 @@
+# The `rushdb` row. Settings come from the plugin's Config schema; automatic context is off by default.
+# To turn it on, override the row in your profile's cordis.patch.yml (a later layer replaces the whole config):
+#
+# - id: rushdb
+#   config:
+#     autoContext: { recall: true, capture: true }
+- insert:
+    - id: rushdb
+      name: '@rushdb/dsh'

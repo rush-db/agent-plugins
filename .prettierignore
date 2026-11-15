@@ -20,3 +20,6 @@ commands/
 mcp_config.json
 /hooks.json
 rules/
+
+# @rushdb/dsh build output, written by packages/dsh/scripts/build.ts.
+packages/dsh/lib/

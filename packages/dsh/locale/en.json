@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "RushDB",
+    "description": "Search, query and analyze your data in RushDB: semantic search for RAG, structured queries, aggregations, and optional automatic context across sessions.",
+    "detail": "README.md"
+  }
+}

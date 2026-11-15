@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "RushDB",
+    "description": "在 RushDB 中搜索、查询和分析你的数据：用于 RAG 的语义搜索、结构化查询、聚合统计，以及可选的跨会话自动上下文。",
+    "detail": "README.md"
+  }
+}

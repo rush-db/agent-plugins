@@ -24,7 +24,7 @@ your RushDB project. It is **off by default**; you turn it on yourself.
 | Codex (marketplace)     | `codex plugin marketplace add rush-db/agent-plugins`, then `codex plugin add rushdb@rushdb` | yes, off by default         | hosted, OAuth                                            |
 | ChatGPT and Codex (app) | the OpenAI app directory, once listed                                | no                          | hosted, OAuth                                            |
 | Pi                      | `pi install npm:@rushdb/pi`                                          | yes, off by default         | local `@rushdb/mcp-server` with an API key, or hosted    |
-| DeepSeek Harness        | `dsh plugin --profile <p> add @rushdb/dsh`                           | yes, off by default         | built-in RushDB tools, API key                           |
+| DeepSeek Harness        | `dsh plugin --profile <p> add @rushdb/dsh`                           | yes, off by default         | built-in RushDB tools, API key ([details](packages/dsh/README.md)) |
 
 - **Antigravity** reads its own manifest from this repository, and the RushDB
   guidance loads as an always-on rule. If you already use the Gemini CLI
@@ -123,8 +123,10 @@ hooks log the error and exit cleanly.
   Delete them, and the two vector indexes if you no longer want them, in the
   RushDB dashboard or with the MCP delete tools. Set `auto_context` back to
   `off` to stop sending.
-- **DeepSeek Harness** uploads session logs to DeepSeek by default. `@rushdb/dsh`
-  has an option to keep its context messages out of that upload.
+- **DeepSeek Harness** uploads session logs to DeepSeek by default, and
+  recalled context becomes part of the session. `@rushdb/dsh` has an option
+  (`excludeFromLogUpload`) to keep every session that received RushDB context
+  out of that upload; dsh can only skip whole sessions.
 
 ## Self-hosted RushDB
 
