@@ -1,7 +1,7 @@
 import { json, type GeneratedFile } from '../lib/files.ts'
 import { HOOK_BUNDLE_NAME } from '../../packages/hooks/src/bundle.ts'
 import { stdioLaunch, type Shared } from '../lib/shared.ts'
-import { readContextTemplate, renderContext, rootVersion } from './gemini.ts'
+import { readContextTemplate, renderContext, rootVersion, type ContextText } from './gemini.ts'
 
 /**
  * Antigravity plugin at the repo root (plan P0-9, finding F6). `.antigravity-plugin/plugin.json` takes precedence
@@ -41,27 +41,40 @@ export function agyManifest(shared: Shared, version: string) {
 }
 
 /**
- * The stdio server. Only required settings become `variables`: agy installs a plugin with variables disabled until
- * the user fills every one in, and has no default values. Optional settings such as `RUSHDB_API_URL` keep the MCP
- * server's own default.
+ * The stdio server. agy expands only `${NAME}` placeholders declared in `variables`, has no default values, and keeps
+ * the plugin off until the user fills in every variable, so a default (the Cloud API URL) is named in the description.
  */
 export function agyMcpConfig(shared: Shared) {
   const { mcp } = shared
-  const required = Object.entries(mcp.stdio.env).filter(([, spec]) => spec.required)
+  const entries = Object.entries(mcp.stdio.env)
   return {
     mcpServers: {
       [mcp.serverName]: {
         ...stdioLaunch(mcp),
-        env: Object.fromEntries(required.map(([name]) => [name, `\${${name}}`])),
-        variables: required.map(([name, spec]) => ({
+        env: Object.fromEntries(entries.map(([name]) => [name, `\${${name}}`])),
+        variables: entries.map(([name, spec]) => ({
           name,
-          title: spec.description,
-          description: `${spec.description}, from your project settings in RushDB`,
+          title: spec.description.split(';')[0]!,
+          description:
+            spec.default === undefined
+              ? `${spec.description}, from your project settings in RushDB`
+              : `${spec.description}. For RushDB Cloud use ${spec.default}`,
           link: shared.listing.urls.docs
         }))
       }
     }
   }
+}
+
+/**
+ * agy hooks get `PLUGIN_ROOT` and `PLUGIN_DATA` but not the MCP `variables`, and they only recall: agy's `Stop` input
+ * has no answer text.
+ */
+export const AGY_CONTEXT_TEXT: ContextText = {
+  storing:
+    'On this platform the hooks only recall and never store turns, so store something through the MCP tools only when the user asks.',
+  credentials:
+    'The user sets the key themselves: the `RUSHDB_API_KEY` variable of the RushDB plugin in `/plugin` connects the MCP tools; automatic context reads the `RUSHDB_API_KEY` environment variable or `~/.config/rushdb/config.json`.'
 }
 
 /**
@@ -90,11 +103,7 @@ export async function antigravityPlugin(shared: Shared, root: string): Promise<G
     { path: AGY_HOOKS, content: json(agyHooks(shared)) },
     {
       path: `${AGY_RULES_DIR}/${shared.listing.name}.md`,
-      content: `---\ntrigger: always_on\n---\n\n${renderContext(
-        shared,
-        await readContextTemplate(root),
-        `the \`RUSHDB_API_KEY\` variable of the ${shared.listing.displayName} plugin in \`/plugin\``
-      )}`
+      content: `---\ntrigger: always_on\n---\n\n${renderContext(shared, await readContextTemplate(root), AGY_CONTEXT_TEXT)}`
     }
   ]
 }

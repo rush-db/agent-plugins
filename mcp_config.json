@@ -7,13 +7,20 @@
         "@rushdb/mcp-server@3.4.1"
       ],
       "env": {
-        "RUSHDB_API_KEY": "${RUSHDB_API_KEY}"
+        "RUSHDB_API_KEY": "${RUSHDB_API_KEY}",
+        "RUSHDB_API_URL": "${RUSHDB_API_URL}"
       },
       "variables": [
         {
           "name": "RUSHDB_API_KEY",
           "title": "RushDB API key",
           "description": "RushDB API key, from your project settings in RushDB",
+          "link": "https://docs.rushdb.com"
+        },
+        {
+          "name": "RUSHDB_API_URL",
+          "title": "RushDB API URL",
+          "description": "RushDB API URL; change it for a self-hosted engine. For RushDB Cloud use https://api.rushdb.com/api/v1",
           "link": "https://docs.rushdb.com"
         }
       ]

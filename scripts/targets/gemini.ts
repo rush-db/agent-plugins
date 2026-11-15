@@ -118,16 +118,21 @@ export function fillTemplate(template: string, values: Record<string, string>): 
   })
 }
 
-/**
- * Context text from the one shared template: `GEMINI.md` for Gemini and `rules/<name>.md` for Antigravity.
- * `credentials` names the host's own way to set the API key.
- */
-export function renderContext(shared: Shared, template: string, credentials: string): string {
+/** The host-specific sentences of the shared context template. */
+export interface ContextText {
+  /** What the hooks store, and when the agent may store through the MCP tools. */
+  storing: string
+  /** How the user sets the API key on this host. */
+  credentials: string
+}
+
+/** Context text from the one shared template: `GEMINI.md` for Gemini and `rules/<name>.md` for Antigravity. */
+export function renderContext(shared: Shared, template: string, text: ContextText): string {
   const body = fillTemplate(template, {
     displayName: shared.listing.displayName,
     serverName: shared.mcp.serverName,
     skills: shared.skills.skills.map((skill) => `\`${skill}\``).join(', '),
-    credentials
+    ...text
   })
   return `<!-- ${GENERATED_BY} from ${CONTEXT_TEMPLATE}; do not edit. -->\n\n${body}`
 }
@@ -155,10 +160,14 @@ export async function geminiCommands(root: string, extension: string): Promise<G
 }
 
 export async function geminiExtension(shared: Shared, root: string): Promise<GeneratedFile[]> {
-  const credentials = `\`gemini extensions config ${shared.listing.name}\``
+  const text: ContextText = {
+    storing:
+      'With `recall+persist`, the hooks store finished turns themselves, so never store the same turn again through the MCP tools.',
+    credentials: `The user sets the key themselves: \`gemini extensions config ${shared.listing.name}\`, the \`RUSHDB_API_KEY\` environment variable, or \`~/.config/rushdb/config.json\`.`
+  }
   return [
     { path: GEMINI_MANIFEST, content: json(geminiManifest(shared, await rootVersion(root))) },
-    { path: GEMINI_CONTEXT, content: renderContext(shared, await readContextTemplate(root), credentials) },
+    { path: GEMINI_CONTEXT, content: renderContext(shared, await readContextTemplate(root), text) },
     { path: GEMINI_HOOKS, content: json(geminiHooks()) },
     ...(await geminiCommands(root, shared.listing.name))
   ]

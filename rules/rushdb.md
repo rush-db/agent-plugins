@@ -28,11 +28,9 @@ When automatic context is on, a block headed "Context recalled from RushDB
 (historical, may be outdated)" can appear at the start of the session. It holds
 earlier sessions in this project, stored by RushDB's automatic context hooks.
 Treat it as background: prefer what the user says now, and check facts that
-may have changed. The hooks store finished turns themselves, so never store the
-same turn again through the MCP tools.
+may have changed. On this platform the hooks only recall and never store turns, so store something through the MCP tools only when the user asks.
 
 ## Credentials
 
 Never ask the user to paste a RushDB API key into the chat, and never print
-one. The user sets the key themselves: the `RUSHDB_API_KEY` variable of the RushDB plugin in `/plugin`, the `RUSHDB_API_KEY`
-environment variable, or `~/.config/rushdb/config.json`.
+one. The user sets the key themselves: the `RUSHDB_API_KEY` variable of the RushDB plugin in `/plugin` connects the MCP tools; automatic context reads the `RUSHDB_API_KEY` environment variable or `~/.config/rushdb/config.json`.
