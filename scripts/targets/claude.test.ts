@@ -70,7 +70,12 @@ describe('claude hooks.json', () => {
     expect(Object.keys(hooks)).toEqual(['SessionStart', 'Stop', 'PreCompact', 'PostCompact', 'SessionEnd'])
     expect(hooks.SessionStart[0]).toMatchObject({ matcher: 'startup|resume|clear|compact' })
     expect(hooks.SessionStart[0]!.hooks[0]).toMatchObject({ command: expect.stringContaining(' recall '), timeout: 10 })
-    expect(hooks.Stop[0]!.hooks[0]).toMatchObject({ command: expect.stringContaining(' capture '), async: true })
+    // Synchronous: `claude -p` cancels async hooks at exit.
+    expect(hooks.Stop[0]!.hooks[0]).toEqual({
+      type: 'command',
+      command: expect.stringContaining(' capture '),
+      timeout: 5
+    })
     expect(hooks.PreCompact[0]!.hooks[0]).toMatchObject({
       command: expect.stringContaining(' precompact '),
       timeout: 30

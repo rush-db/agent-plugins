@@ -22,7 +22,9 @@ function hook(command: string, extra: Record<string, unknown> = {}) {
 /**
  * Claude `hooks/hooks.json`. Qwen Code runs the same file after a marketplace install.
  * - `SessionStart` re-fires after `/clear` and compaction, so recall covers those too.
- * - `Stop` is async: capture never delays the next prompt.
+ * - `Stop` is synchronous, because `claude -p` cancels async hooks at exit and would lose the last turn. Capture
+ *   only writes the turn to the local outbox and spawns a detached flush, so it takes about 60 ms; the 5 s timeout
+ *   caps it if the disk or git lookup stalls.
  * - `SessionEnd` has a 1.5 s budget that plugin timeouts don't raise; `end` only spawns a detached flush.
  */
 export function claudeHooks() {
@@ -31,7 +33,7 @@ export function claudeHooks() {
       'RushDB automatic context: recall at session start, capture of finished turns, flush around compaction and at session end. Off unless auto_context is set.',
     hooks: {
       SessionStart: [{ matcher: 'startup|resume|clear|compact', hooks: [hook('recall', { timeout: 10 })] }],
-      Stop: [{ hooks: [hook('capture', { async: true, timeout: 30 })] }],
+      Stop: [{ hooks: [hook('capture', { timeout: 5 })] }],
       PreCompact: [{ hooks: [hook('precompact', { timeout: 30 })] }],
       PostCompact: [{ hooks: [hook('postcompact', { timeout: 15 })] }],
       SessionEnd: [{ hooks: [hook('end', { timeout: 2 })] }]
