@@ -32,6 +32,25 @@ jobs:
       - name: No symlinks in the repo
         run: test -z "$(git ls-files -s | awk '$1 == "120000"')"
 
+  claude:
+    runs-on: ubuntu-latest
+    env:
+      CLAUDE: npx -y @anthropic-ai/claude-code@2.1.309
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Validate the Claude plugin and marketplace
+        run: |
+          $CLAUDE plugin validate ./plugins/claude/rushdb
+          $CLAUDE plugin validate .
+      # Fails on PRIVACY_URL_MISSING until the owner sets the privacy policy URL
+      # (plan decision D6); make it blocking then.
+      - name: Validate against the Claude directory profile
+        continue-on-error: true
+        run: $CLAUDE plugin validate --strict --profile directory ./plugins/claude/rushdb
+
   secrets:
     runs-on: ubuntu-latest
     steps:

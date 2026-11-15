@@ -10,7 +10,7 @@ describe('lastUserPrompt', () => {
     expect(await lastUserPrompt(join(fixtures, 'claude-transcript.jsonl'))).toBe('Which package manager do we use?')
   })
 
-  it('reads Gemini-style parts (the Qwen chat format; not yet seen live)', async () => {
+  it('reads Gemini-style parts and skips system snapshots in a Qwen Code 0.27.4 chat', async () => {
     expect(await lastUserPrompt(join(fixtures, 'qwen-transcript.jsonl'))).toBe('Which package manager do we use?')
   })
 
@@ -49,5 +49,11 @@ describe('promptText', () => {
         }
       })
     ).toBe('one\ntwo')
+  })
+
+  it('ignores user-role messages in records of another type', () => {
+    const message = { role: 'user', parts: [{ text: 'Current memory catalog' }] }
+    expect(promptText({ type: 'system', subtype: 'memory_catalog_snapshot', message })).toBe('')
+    expect(promptText({ message })).toBe('Current memory catalog')
   })
 })

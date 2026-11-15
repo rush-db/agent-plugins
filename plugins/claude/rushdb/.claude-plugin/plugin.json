@@ -1,0 +1,66 @@
+{
+  "name": "rushdb",
+  "displayName": "RushDB",
+  "version": "0.1.0",
+  "description": "RushDB for agents: search, query and analyze your data with RushDB MCP tools and skills, with optional automatic context across sessions.",
+  "author": {
+    "name": "RushDB",
+    "url": "https://rushdb.com"
+  },
+  "homepage": "https://rushdb.com",
+  "repository": "https://github.com/rush-db/agent-plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "rushdb",
+    "mcp",
+    "database",
+    "rag",
+    "semantic-search",
+    "vector-search",
+    "knowledge-graph",
+    "graph-database",
+    "analytics",
+    "agent-context"
+  ],
+  "icon": "./assets/icon.png",
+  "documentationUrl": "https://docs.rushdb.com",
+  "supportUrl": "https://github.com/rush-db/agent-plugins/issues",
+  "userConfig": {
+    "api_key": {
+      "type": "string",
+      "title": "RushDB API key",
+      "description": "Project API key from the RushDB dashboard. Only the automatic-context hooks use it; the MCP tools sign in with OAuth.",
+      "sensitive": true,
+      "required": false
+    },
+    "api_url": {
+      "type": "string",
+      "title": "RushDB API URL",
+      "description": "Leave the default for RushDB Cloud; set your own URL for a self-hosted RushDB.",
+      "default": "https://api.rushdb.com/api/v1"
+    },
+    "auto_context": {
+      "type": "string",
+      "title": "Automatic context",
+      "description": "off: hooks do nothing. recall: recall earlier context at session start. recall+persist: also store finished turns in RushDB.",
+      "options": [
+        "off",
+        "recall",
+        "recall+persist"
+      ],
+      "default": "off"
+    },
+    "context_scope": {
+      "type": "string",
+      "title": "Context scope",
+      "description": "Optional name that replaces the project key, to share context across folders or keep it apart. Empty: one scope per git remote or folder.",
+      "required": false
+    }
+  },
+  "mcpServers": {
+    "rushdb": {
+      "type": "http",
+      "url": "https://mcp.rushdb.com/mcp"
+    }
+  }
+}

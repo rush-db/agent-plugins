@@ -26,6 +26,8 @@ export function promptText(entry: unknown): string {
   if (!entry || typeof entry !== 'object') return ''
   const line = entry as Record<string, unknown>
   if (line.isMeta === true || line.isSidechain === true || 'toolUseResult' in line) return ''
+  // Qwen records injected context (such as `memory_catalog_snapshot`) as `type: 'system'` with a user-role message.
+  if (typeof line.type === 'string' && line.type !== 'user') return ''
   const message = (line.message && typeof line.message === 'object' ? line.message : line) as Record<string, unknown>
   const role = message.role ?? line.type
   if (role !== 'user') return ''

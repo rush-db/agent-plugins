@@ -2400,6 +2400,7 @@ function promptText(entry) {
   if (!entry || typeof entry !== "object") return "";
   const line = entry;
   if (line.isMeta === true || line.isSidechain === true || "toolUseResult" in line) return "";
+  if (typeof line.type === "string" && line.type !== "user") return "";
   const message = line.message && typeof line.message === "object" ? line.message : line;
   const role = message.role ?? line.type;
   if (role !== "user") return "";

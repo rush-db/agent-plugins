@@ -1,0 +1,15 @@
+{
+  "name": "rushdb",
+  "owner": {
+    "name": "RushDB",
+    "url": "https://rushdb.com"
+  },
+  "description": "RushDB plugins for agent platforms",
+  "plugins": [
+    {
+      "name": "rushdb",
+      "source": "./plugins/claude/rushdb",
+      "description": "RushDB for agents: search, query and analyze your data with RushDB MCP tools and skills, with optional automatic context across sessions."
+    }
+  ]
+}
